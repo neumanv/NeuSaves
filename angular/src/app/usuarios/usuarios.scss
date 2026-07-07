@@ -1,0 +1,46 @@
+.modal-overlay{
+  animation: modal-fade 0.15s ease-out;
+}
+
+.modal-card{
+  animation: modal-pop 0.2s ease-out;
+}
+
+@keyframes modal-fade{
+  from{ 
+    opacity: 0; 
+  }to{ 
+    opacity: 1; 
+  }
+}
+
+@keyframes modal-pop{
+  from {
+    opacity: 0; transform: scale(0.95) translateY(8px);
+  }to{
+    opacity: 1; transform: scale(1) translateY(0);
+  }
+}
+
+/* La tarjeta del modal es fija (sin scroll interno). Si la pantalla es
+   más baja que el modal, es el overlay quien se desplaza: "safe center"
+   lo centra cuando cabe y lo alinea arriba cuando no, para que no se
+   corte la parte superior. */
+.modal-overlay{
+  overflow-y: auto;
+  align-items: safe center;
+}
+
+/* El menú de prefijos (absolute, más ancho que su celda) se ancla al
+   borde derecho para que no sobresalga de la tarjeta. */
+.modal-card .w-72.max-h-60{
+  left: auto;
+  right: 0;
+}
+
+/* Hover suave de la tarjeta de usuario, excepto cuando el cursor está
+   sobre el botón de borrar (el :hover del padre seguiría activo con una
+   clase hover: normal). */
+.tarjeta-usuario:hover:not(:has(#borrar_usuario:hover)){
+  background-color: color-mix(in oklab, var(--color-fondo) 40%, transparent);
+}

@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme {
+  /*colores*/
+  --color-fondo: #F2F2F2;
+  --color-blanco: #FFFFFF;
+  --color-borde: #E6E6E6;
+  --color-texto: #000000;
+  --color-boton: #999999;
+  --color-peligro: #FF3D3D;
+  --color-verde: #2E9E6B;
+
+  /*fuentes*/
+  --font-texto: "Bellota Text", sans-serif;
+  --font-titulos: "Radio Canada Big", sans-serif;
+}
+
+body{
+  background-color: var(--color-fondo);
+  color: var(--color-texto);
+  font-family: var(--font-texto);
+}
+
+h1, h2, h3, h4, h5, h6{
+  font-family: var(--font-titulos);
+}
+
+.footer-link, .footer-link:hover, .footer-link:focus, footer-link:visited{
+  color: var(--color-texto);
+  text-decoration: none;
+}
+
+/*Botones que deben ser siempre círculos perfectos (50% sobre caja cuadrada)*/
+#perfil, #borrar_usuario, #ver_contrasena{
+  border-radius: 50%;
+}
+
+/*Misma redondez de esquinas que las tarjetas de usuario (rounded-2xl)*/
+#nuevo_usuario{
+  border-radius: 1rem;
+}

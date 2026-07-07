@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: java
+
+  datasource:
+    url: jdbc:postgresql://base-datos:5432/gastos_db
+    username: usuario_gastos
+    password: clave_secreta
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+
+  #Servidor SMTP para los correos de verificación.
+  #En desarrollo apunta a Mailpit (docker-compose); en producción se cambia por variables de entorno.
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:1025}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SPRING_MAIL_AUTH:false}
+          starttls:
+            enable: ${SPRING_MAIL_STARTTLS:false}

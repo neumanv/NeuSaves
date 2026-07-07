@@ -1,0 +1,202 @@
+<div class="bg-fondo text-texto font-texto min-h-screen flex flex-col">
+  <app-header />
+  <main class="flex-1 flex flex-col items-center justify-center py-6 px-4">
+
+    @switch (modo()){
+
+      <!-- ============ INICIO DE SESIÓN ============ -->
+      @case ("login"){
+        <form (ngSubmit)="iniciarSesion()" class="bg-blanco w-full max-w-sm rounded-2xl border border-borde shadow-sm p-8 tarjeta-login">
+          <div class="text-center mb-6">
+            <div class="mx-auto w-16 h-16 bg-fondo rounded-full flex items-center justify-center mb-4 border border-borde">
+              <i class="bi bi-person-fill" style="font-size: 2rem;"></i>
+            </div>
+            <h2 class="font-titulos text-2xl font-bold">Iniciar sesión</h2>
+            <p class="text-xs font-semibold uppercase tracking-widest mt-1">Sistema de Gestión de Gastos</p>
+          </div>
+
+          <div class="text-sm font-medium mb-4">Email
+            <div class="mt-1">
+              <input name="email" type="email" [(ngModel)]="credenciales.email" required maxlength="50" autocomplete="email" class="block w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton" />
+            </div>
+          </div>
+
+          <div class="text-sm font-medium mb-8">Contraseña
+            <div class="relative mt-1">
+              <input name="contrasena" [type]="verContrasena() ? 'text' : 'password'" [(ngModel)]="credenciales.contrasena" required maxlength="20" autocomplete="current-password" class="block w-full bg-fondo border border-borde rounded-lg px-3 py-2 pr-11 text-sm focus:outline-none focus:border-boton" />
+              <button type="button" id="ver_contrasena" (click)="toggleVerContrasena()" [title]="verContrasena() ? 'Ocultar contraseña' : 'Ver contraseña'" class="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-texto hover:bg-borde transition-colors cursor-pointer">
+                <i class="bi text-lg" [class.bi-eye-fill]="!verContrasena()" [class.bi-eye-slash-fill]="verContrasena()"></i>
+              </button>
+            </div>
+          </div>
+
+          @if (errorLogin()){
+            <p class="text-peligro text-sm mb-4 -mt-4 font-semibold">{{ errorLogin() }}</p>
+          }
+
+          <button type="submit" [disabled]="entrando()" class="w-full py-2.5 px-4 rounded-xl bg-boton text-blanco hover:bg-boton/80 text-sm font-semibold transition-colors disabled:opacity-50 cursor-pointer">
+            {{ entrando() ? "Entrando..." : "Entrar" }}
+          </button>
+
+          <div class="flex items-center gap-3 my-5">
+            <div class="flex-1 h-px bg-borde"></div>
+            <span class="text-xs text-boton">¿No tienes cuenta?</span>
+            <div class="flex-1 h-px bg-borde"></div>
+          </div>
+
+          <button type="button" (click)="irARegistro()" class="w-full py-2.5 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde text-sm font-medium transition-colors cursor-pointer">
+            Crear un usuario
+          </button>
+        </form>
+      }
+
+      <!-- ============ REGISTRO ============ -->
+      @case ("registro"){
+        <form (ngSubmit)="crearCuenta()" class="bg-blanco w-full max-w-xl rounded-2xl border border-borde shadow-sm p-4 text-[12px] tarjeta-login">
+          <div class="text-center mb-2">
+            <h3 class="font-titulos text-lg font-bold">Crear un usuario</h3>
+          </div>
+          <div class="grid grid-cols-2 gap-x-3 gap-y-2">
+            <div class="col-span-2 font-medium">Email *
+              <div class="mt-1">
+                <input name="email" type="email" [(ngModel)]="nuevoUsuario.email" required maxlength="50" class="block w-full bg-fondo border border-borde rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-boton" />
+              </div>
+            </div>
+            <div class="col-span-2 font-medium">Contraseña *
+              <div class="relative mt-1">
+                <input name="contrasena" [type]="verContrasena() ? 'text' : 'password'" [(ngModel)]="nuevoUsuario.contrasena" required maxlength="20" autocomplete="new-password" class="block w-full bg-fondo border border-borde rounded-lg px-3 py-1.5 pr-11 text-[12px] focus:outline-none focus:border-boton" />
+                <button type="button" id="ver_contrasena" (click)="toggleVerContrasena()" [title]="verContrasena() ? 'Ocultar contraseña' : 'Ver contraseña'" class="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-texto hover:bg-borde transition-colors cursor-pointer">
+                  <i class="bi text-lg" [class.bi-eye-fill]="!verContrasena()" [class.bi-eye-slash-fill]="verContrasena()"></i>
+                </button>
+              </div>
+            </div>
+            <label class="col-span-1 font-medium">Nombre *
+              <input name="nombre" [(ngModel)]="nuevoUsuario.nombre" required maxlength="50" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-boton" />
+            </label>
+            <label class="col-span-1 font-medium">
+              Primer apellido *
+              <input name="apellido1" [(ngModel)]="nuevoUsuario.apellido1" required maxlength="30" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-boton" />
+            </label>
+            <label class="col-span-1 font-medium">Segundo apellido
+              <input name="apellido2" [(ngModel)]="nuevoUsuario.apellido2" maxlength="30" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-boton" />
+            </label>
+            <label class="col-span-1 font-medium">DNI *
+              <input name="dni" [(ngModel)]="nuevoUsuario.dni" required maxlength="9" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-1.5 text-[12px] uppercase focus:outline-none focus:border-boton" />
+            </label>
+            <div class="col-span-1 font-medium relative">Prefijo *
+              <button type="button" (click)="togglePrefijo()" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-1.5 text-[12px] flex items-center gap-2 text-left cursor-pointer">
+                @if (paisSeleccionado(); as pais){
+                  <span [class]="'fi fi-' + pais.code.toLowerCase()"></span>
+                  <span class="truncate">{{ pais.phoneCode }} {{ pais.name }}</span>
+                }@else{
+                  <span class="text-boton">Selecciona...</span>
+                }
+                <i class="bi bi-chevron-down ml-auto text-[10px]"></i>
+              </button>
+
+              @if (prefijoAbierto()){
+                <div class="fixed inset-0 z-40" (click)="cerrarPrefijo()"></div>
+                <div class="absolute left-0 z-50 mt-1 w-72 max-h-60 overflow-y-auto bg-blanco border border-borde rounded-lg shadow-xl">
+                  <div class="sticky top-0 z-10 bg-blanco p-2 border-b border-borde">
+                    <input type="text" placeholder="Buscar país o prefijo..." [value]="busquedaPrefijo()" (input)="busquedaPrefijo.set($any($event.target).value)" class="w-full bg-fondo border border-borde rounded-md px-2 py-1.5 text-[12px] focus:outline-none focus:border-boton" />
+                  </div>
+                  @for (p of prefijosFiltrados(); track p.code){
+                    <button type="button" (click)="seleccionarPrefijo(p)"
+                      class="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-left hover:bg-fondo">
+                      <span [class]="'fi fi-' + p.code.toLowerCase()"></span>
+                      <span class="truncate">{{ p.phoneCode }} {{ p.name }}</span>
+                    </button>
+                  }@empty{
+                    <p class="px-3 py-2 text-[12px] text-boton">Sin resultados</p>
+                  }
+                </div>
+              }
+            </div>
+            <label class="col-span-1 font-medium">
+              Teléfono 1 *
+              <input name="telefono1" [(ngModel)]="nuevoUsuario.telefono1" required maxlength="9" inputmode="numeric" (input)="soloNumeros($event, 'telefono1')"
+                class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-boton" />
+            </label>
+            <label class="col-span-2 font-medium">Teléfono 2
+              <input name="telefono2" [(ngModel)]="nuevoUsuario.telefono2" maxlength="9" inputmode="numeric" (input)="soloNumeros($event, 'telefono2')" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-boton" />
+            </label>
+            <div class="col-span-2 font-medium">
+              Sexo *
+              <div class="mt-1 grid grid-cols-2 gap-3">
+                <button type="button" (click)="elegirSexo('M')"
+                  [class.bg-verde]="nuevoUsuario.sexo === 'M'"
+                  [class.text-blanco]="nuevoUsuario.sexo === 'M'"
+                  [class.border-verde]="nuevoUsuario.sexo === 'M'"
+                  [class.bg-fondo]="nuevoUsuario.sexo !== 'M'"
+                  [class.text-texto]="nuevoUsuario.sexo !== 'M'"
+                  [class.border-borde]="nuevoUsuario.sexo !== 'M'"
+                  class="flex items-center justify-center gap-2 py-2 px-4 rounded-lg border text-[12px] font-medium transition-colors cursor-pointer">
+                  <i class="bi" [class.bi-check-circle-fill]="nuevoUsuario.sexo === 'M'" [class.bi-circle]="nuevoUsuario.sexo !== 'M'"></i>
+                  Hombre
+                </button>
+                <button type="button" (click)="elegirSexo('F')"
+                  [class.bg-verde]="nuevoUsuario.sexo === 'F'"
+                  [class.text-blanco]="nuevoUsuario.sexo === 'F'"
+                  [class.border-verde]="nuevoUsuario.sexo === 'F'"
+                  [class.bg-fondo]="nuevoUsuario.sexo !== 'F'"
+                  [class.text-texto]="nuevoUsuario.sexo !== 'F'"
+                  [class.border-borde]="nuevoUsuario.sexo !== 'F'"
+                  class="flex items-center justify-center gap-2 py-2 px-4 rounded-lg border text-[12px] font-medium transition-colors cursor-pointer">
+                  <i class="bi" [class.bi-check-circle-fill]="nuevoUsuario.sexo === 'F'" [class.bi-circle]="nuevoUsuario.sexo !== 'F'"></i>
+                  Mujer
+                </button>
+              </div>
+            </div>
+          </div>
+
+          @if (errorCrear()){
+            <p class="text-peligro text-[12px] mt-2 font-semibold">{{ errorCrear() }}</p>
+          }
+
+          <div class="flex gap-3 mt-3">
+            <button type="button" (click)="irALogin()" [disabled]="guardando()" class="flex-1 py-2 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde text-[12px] font-medium transition-colors disabled:opacity-50 cursor-pointer">
+              Volver
+            </button>
+            <button type="submit" [disabled]="guardando()" class="flex-1 py-2 px-4 rounded-xl bg-boton text-blanco hover:bg-boton/80 text-[12px] font-semibold transition-colors disabled:opacity-50 cursor-pointer">
+              {{ guardando() ? "Creando..." : "Crear usuario" }}
+            </button>
+          </div>
+        </form>
+      }
+
+      <!-- ============ VERIFICACIÓN DEL CÓDIGO ============ -->
+      @case ("verificar"){
+        <form (ngSubmit)="verificarCodigo()" class="bg-blanco w-full max-w-sm rounded-2xl border border-borde shadow-sm p-8 text-center tarjeta-login">
+          <div class="mx-auto w-16 h-16 bg-fondo rounded-full flex items-center justify-center mb-4 border border-borde">
+            <i class="bi bi-envelope-check-fill" style="font-size: 1.75rem;"></i>
+          </div>
+          <h2 class="font-titulos text-2xl font-bold mb-2">Verifica tu cuenta</h2>
+
+          @if (avisoVerificar()){
+            <p class="text-sm mb-1">{{ avisoVerificar() }}</p>
+          }
+          <p class="text-xs text-boton mb-5">{{ emailPendiente() }}</p>
+
+          <input name="codigo" [(ngModel)]="codigo" maxlength="5" inputmode="numeric" autocomplete="one-time-code" placeholder="•••••" (input)="soloNumerosCodigo($event)" class="w-full bg-fondo border border-borde rounded-lg px-3 py-3 text-center text-2xl tracking-[0.5em] font-titulos focus:outline-none focus:border-boton" />
+
+          @if (errorVerificar()){
+            <p class="text-peligro text-sm mt-3 font-semibold">{{ errorVerificar() }}</p>
+          }
+
+          <button type="submit" [disabled]="verificando()" class="w-full mt-5 py-2.5 px-4 rounded-xl bg-boton text-blanco hover:bg-boton/80 text-sm font-semibold transition-colors disabled:opacity-50 cursor-pointer">
+            {{ verificando() ? "Verificando..." : "Verificar" }}
+          </button>
+
+          <button type="button" (click)="reenviarCodigo()" [disabled]="reenviando()" class="w-full mt-3 py-2.5 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer">
+            {{ reenviando() ? "Enviando..." : "Reenviar código" }}
+          </button>
+
+          <button type="button" (click)="irALogin()" class="mt-4 text-xs text-boton hover:text-texto transition-colors cursor-pointer">
+            Volver al inicio de sesión
+          </button>
+        </form>
+      }
+    }
+  </main>
+  <app-footer/>
+</div>

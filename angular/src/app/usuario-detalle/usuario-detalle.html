@@ -1,0 +1,11 @@
+<div class="bg-fondo text-texto font-texto min-h-screen flex flex-col">
+  <app-header [mostrarPerfil]="true" />
+  <main class="flex-1 flex flex-col items-center py-12 px-4">
+    @if (usuario(); as u){
+      <h1 class="font-titulos text-3xl font-bold text-center">
+        {{ saludo }}, {{ u.nombre }} {{ u.apellido1 }}
+      </h1>
+    }
+  </main>
+  <app-footer/>
+</div>

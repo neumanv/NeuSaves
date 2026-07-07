@@ -1,0 +1,18 @@
+.tarjeta-login{
+  animation: tarjeta-pop 0.2s ease-out;
+}
+
+@keyframes tarjeta-pop{
+  from{
+    opacity: 0; transform: scale(0.98) translateY(8px);
+  }to{
+    opacity: 1; transform: scale(1) translateY(0);
+  }
+}
+
+/* El menú de prefijos (absolute, más ancho que su celda) se ancla al
+   borde derecho para que no sobresalga de la tarjeta. */
+.tarjeta-login .w-72.max-h-60{
+  left: auto;
+  right: 0;
+}

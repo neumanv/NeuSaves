@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  base-datos:
+    image: postgres:15-alpine
+    container_name: contenedor-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: gastos_db
+      POSTGRES_USER: usuario_gastos
+      POSTGRES_PASSWORD: clave_secreta
+    ports:
+      - "5432:5432"
+    volumes:
+      - datos_postgres:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U usuario_gastos -d gastos_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  #Emails http://localhost:8025
+  correo:
+    image: axllent/mailpit
+    container_name: contenedor-mailpit
+    restart: always
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  backend:
+    build: ./java
+    container_name: contenedor-springboot
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://base-datos:5432/gastos_db
+      - SPRING_DATASOURCE_USERNAME=usuario_gastos
+      - SPRING_DATASOURCE_PASSWORD=clave_secreta
+      - SPRING_MAIL_HOST=correo
+      - SPRING_MAIL_PORT=1025
+    depends_on:
+      base-datos:
+        condition: service_healthy
+      correo:
+        condition: service_started
+
+  frontend:
+    build: ./angular
+    container_name: contenedor-angular
+    restart: always
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+
+volumes:
+  datos_postgres:
