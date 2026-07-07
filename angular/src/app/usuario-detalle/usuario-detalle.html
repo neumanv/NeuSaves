@@ -1,10 +1,33 @@
 <div class="bg-fondo text-texto font-texto min-h-screen flex flex-col">
   <app-header [mostrarPerfil]="true" />
-  <main class="flex-1 flex flex-col items-center py-12 px-4">
+  <main class="flex-1 w-[60%] mx-auto flex flex-col items-center py-12 px-4">
     @if (usuario(); as u){
       <h1 class="font-titulos text-3xl font-bold text-center">
         {{ saludo }}, {{ u.nombre }} {{ u.apellido1 }}
       </h1>
+    }
+
+    @if (usuario()){
+      <div class="self-start mt-8 flex flex-wrap gap-6">
+        <!-- Saldo: texto y, debajo, el importe en grande y coloreado (0 si es null) -->
+        <div class="bg-blanco border border-borde rounded-2xl shadow-sm px-8 py-6 text-left">
+          <p class="text-sm font-medium">Tu saldo:</p>
+          <p class="font-titulos text-5xl font-bold mt-2"
+            [class.text-peligro]="saldoNivel() === 'bajo'"
+            [class.text-aviso]="saldoNivel() === 'medio'"
+            [class.text-verde]="saldoNivel() === 'alto'">
+            {{ saldoTexto() }} €
+          </p>
+        </div>
+
+        <!-- Movimientos del mes actual: cantidad en grande, siempre en negro -->
+        <div class="bg-blanco border border-borde rounded-2xl shadow-sm px-8 py-6 text-left">
+          <p class="text-sm font-medium">Movimientos de este mes:</p>
+          <p class="font-titulos text-5xl font-bold mt-2 text-texto">
+            {{ movimientosMes() }}
+          </p>
+        </div>
+      </div>
     }
   </main>
   <app-footer/>

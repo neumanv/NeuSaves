@@ -21,13 +21,13 @@ import java.util.List;
 @CrossOrigin(origins = "http://localhost:4200")
 public class UsuarioController{
 
+    private static final long MAX_SUBUSUARIOS = 4;
     private final UsuarioRepository usuarioRepository;
 
     public UsuarioController(UsuarioRepository usuarioRepository){
         this.usuarioRepository = usuarioRepository;
     }
 
-    //Sin parámetro devuelve todos; con ?principal=id, solo los sub-usuarios de ese usuario principal
     @GetMapping
     public List<Usuario> obtenerUsuarios(@RequestParam(required = false) Long principal){
         if (principal != null){
@@ -36,8 +36,6 @@ public class UsuarioController{
         return usuarioRepository.findAll();
     }
 
-    //Crea un sub-usuario: sin email ni contraseña, siempre ligado al usuario principal logeado.
-    //Las cuentas de inicio de sesión se crean en /api/auth/registro.
     @PostMapping
     public ResponseEntity<Usuario> crearUsuario(@RequestBody Usuario usuario){
         usuario.setIdUsuario(null);
@@ -47,10 +45,13 @@ public class UsuarioController{
             return ResponseEntity.badRequest().build();
         }
 
-        //El usuario principal tiene que existir, estar verificado y ser una cuenta real (no otro sub-usuario)
         Usuario principal = usuarioRepository.findById(idUsuarioPrincipal).orElse(null);
         if (principal == null || principal.getIdUsuarioPrincipal() != null || !principal.isVerificado()){
             return ResponseEntity.badRequest().build();
+        }
+
+        if (usuarioRepository.countByIdUsuarioPrincipal(idUsuarioPrincipal) >= MAX_SUBUSUARIOS){
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
         usuario.setEmail(null);
@@ -62,7 +63,6 @@ public class UsuarioController{
         return ResponseEntity.status(HttpStatus.CREATED).body(guardado);
     }
 
-    //Solo se pueden borrar sub-usuarios: el usuario principal (cuenta de inicio de sesión) no se toca
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> borrarUsuario(@PathVariable Long id){
         Usuario usuario = usuarioRepository.findById(id).orElse(null);

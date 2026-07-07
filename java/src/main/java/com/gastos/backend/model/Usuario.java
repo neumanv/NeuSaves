@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "usuarios")
 public class Usuario{
@@ -13,12 +15,9 @@ public class Usuario{
     @Column(name = "id_usuario")
     private Long idUsuario;
 
-    //Solo los superusuarios (cuentas de inicio de sesión) tienen email y contraseña
     @Column(unique = true, length = 50)
     private String email;
 
-    //WRITE_ONLY: se acepta al crear pero nunca se devuelve en las respuestas de la API.
-    //Se guarda cifrada con BCrypt (hash de 60 caracteres), nunca en texto plano.
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(length = 72)
     private String contrasena;
@@ -32,16 +31,16 @@ public class Usuario{
     @Column(length = 30)
     private String apellido2;
 
-    @Column(nullable = false, length = 6)
+    @Column(length = 6)
     private String prefijo;
 
-    @Column(nullable = false, length = 9)
+    @Column(length = 9)
     private String telefono1;
 
     @Column(length = 9)
     private String telefono2;
 
-    @Column(nullable = false, unique = true, length = 9)
+    @Column(unique = true, length = 9)
     private String dni;
 
     @Column(length = 1)
@@ -51,14 +50,16 @@ public class Usuario{
     @Column(nullable = false)
     private boolean verificado;
 
-    //Nunca se expone en la API: solo viaja por correo electrónico
     @JsonIgnore
     @Column(name = "codigo_verificacion", length = 5)
     private String codigoVerificacion;
 
-    //Usuario principal al que pertenece este sub-usuario (null si es una cuenta de inicio de sesión)
     @Column(name = "id_usuario_principal")
     private Long idUsuarioPrincipal;
+
+    //Saldo del usuario, con 2 decimales como máximo. Arranca a 0 para no insertar null
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal saldo = BigDecimal.ZERO;
 
     public Long getIdUsuario(){
         return idUsuario;
@@ -156,5 +157,12 @@ public class Usuario{
     }
     public void setIdUsuarioPrincipal(Long idUsuarioPrincipal){
         this.idUsuarioPrincipal = idUsuarioPrincipal;
+    }
+
+    public BigDecimal getSaldo(){
+        return saldo;
+    }
+    public void setSaldo(BigDecimal saldo){
+        this.saldo = saldo;
     }
 }

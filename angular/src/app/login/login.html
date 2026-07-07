@@ -1,11 +1,9 @@
 <div class="bg-fondo text-texto font-texto min-h-screen flex flex-col">
   <app-header />
-  <main class="flex-1 flex flex-col items-center justify-center py-6 px-4">
+  <main class="flex-1 w-[60%] mx-auto flex flex-col items-center justify-center py-6 px-4">
 
     @switch (modo()){
-
-      <!-- ============ INICIO DE SESIÓN ============ -->
-      @case ("login"){
+      @case ("login"){ <!-- Iniciar sesión -->
         <form (ngSubmit)="iniciarSesion()" class="bg-blanco w-full max-w-sm rounded-2xl border border-borde shadow-sm p-8 tarjeta-login">
           <div class="text-center mb-6">
             <div class="mx-auto w-16 h-16 bg-fondo rounded-full flex items-center justify-center mb-4 border border-borde">
@@ -24,7 +22,7 @@
           <div class="text-sm font-medium mb-8">Contraseña
             <div class="relative mt-1">
               <input name="contrasena" [type]="verContrasena() ? 'text' : 'password'" [(ngModel)]="credenciales.contrasena" required maxlength="20" autocomplete="current-password" class="block w-full bg-fondo border border-borde rounded-lg px-3 py-2 pr-11 text-sm focus:outline-none focus:border-boton" />
-              <button type="button" id="ver_contrasena" (click)="toggleVerContrasena()" [title]="verContrasena() ? 'Ocultar contraseña' : 'Ver contraseña'" class="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-texto hover:bg-borde transition-colors cursor-pointer">
+              <button type="button" id="ver_contrasena" data-accion="ver-contrasena" [title]="verContrasena() ? 'Ocultar contraseña' : 'Ver contraseña'" class="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-texto hover:bg-borde transition-colors cursor-pointer">
                 <i class="bi text-lg" [class.bi-eye-fill]="!verContrasena()" [class.bi-eye-slash-fill]="verContrasena()"></i>
               </button>
             </div>
@@ -44,13 +42,13 @@
             <div class="flex-1 h-px bg-borde"></div>
           </div>
 
-          <button type="button" (click)="irARegistro()" class="w-full py-2.5 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde text-sm font-medium transition-colors cursor-pointer">
+          <button type="button" data-accion="ir-registro" class="w-full py-2.5 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde text-sm font-medium transition-colors cursor-pointer">
             Crear un usuario
           </button>
         </form>
       }
 
-      <!-- ============ REGISTRO ============ -->
+      <!-- Registrarse -->
       @case ("registro"){
         <form (ngSubmit)="crearCuenta()" class="bg-blanco w-full max-w-xl rounded-2xl border border-borde shadow-sm p-4 text-[12px] tarjeta-login">
           <div class="text-center mb-2">
@@ -65,7 +63,7 @@
             <div class="col-span-2 font-medium">Contraseña *
               <div class="relative mt-1">
                 <input name="contrasena" [type]="verContrasena() ? 'text' : 'password'" [(ngModel)]="nuevoUsuario.contrasena" required maxlength="20" autocomplete="new-password" class="block w-full bg-fondo border border-borde rounded-lg px-3 py-1.5 pr-11 text-[12px] focus:outline-none focus:border-boton" />
-                <button type="button" id="ver_contrasena" (click)="toggleVerContrasena()" [title]="verContrasena() ? 'Ocultar contraseña' : 'Ver contraseña'" class="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-texto hover:bg-borde transition-colors cursor-pointer">
+                <button type="button" id="ver_contrasena" data-accion="ver-contrasena" [title]="verContrasena() ? 'Ocultar contraseña' : 'Ver contraseña'" class="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-texto hover:bg-borde transition-colors cursor-pointer">
                   <i class="bi text-lg" [class.bi-eye-fill]="!verContrasena()" [class.bi-eye-slash-fill]="verContrasena()"></i>
                 </button>
               </div>
@@ -84,7 +82,7 @@
               <input name="dni" [(ngModel)]="nuevoUsuario.dni" required maxlength="9" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-1.5 text-[12px] uppercase focus:outline-none focus:border-boton" />
             </label>
             <div class="col-span-1 font-medium relative">Prefijo *
-              <button type="button" (click)="togglePrefijo()" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-1.5 text-[12px] flex items-center gap-2 text-left cursor-pointer">
+              <button type="button" data-accion="toggle-prefijo" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-1.5 text-[12px] flex items-center gap-2 text-left cursor-pointer">
                 @if (paisSeleccionado(); as pais){
                   <span [class]="'fi fi-' + pais.code.toLowerCase()"></span>
                   <span class="truncate">{{ pais.phoneCode }} {{ pais.name }}</span>
@@ -95,13 +93,13 @@
               </button>
 
               @if (prefijoAbierto()){
-                <div class="fixed inset-0 z-40" (click)="cerrarPrefijo()"></div>
+                <div class="fixed inset-0 z-40" data-accion="cerrar-prefijo"></div>
                 <div class="absolute left-0 z-50 mt-1 w-72 max-h-60 overflow-y-auto bg-blanco border border-borde rounded-lg shadow-xl">
                   <div class="sticky top-0 z-10 bg-blanco p-2 border-b border-borde">
                     <input type="text" placeholder="Buscar país o prefijo..." [value]="busquedaPrefijo()" (input)="busquedaPrefijo.set($any($event.target).value)" class="w-full bg-fondo border border-borde rounded-md px-2 py-1.5 text-[12px] focus:outline-none focus:border-boton" />
                   </div>
                   @for (p of prefijosFiltrados(); track p.code){
-                    <button type="button" (click)="seleccionarPrefijo(p)"
+                    <button type="button" data-accion="seleccionar-prefijo" [attr.data-codigo]="p.code"
                       class="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-left hover:bg-fondo">
                       <span [class]="'fi fi-' + p.code.toLowerCase()"></span>
                       <span class="truncate">{{ p.phoneCode }} {{ p.name }}</span>
@@ -123,7 +121,7 @@
             <div class="col-span-2 font-medium">
               Sexo *
               <div class="mt-1 grid grid-cols-2 gap-3">
-                <button type="button" (click)="elegirSexo('M')"
+                <button type="button" data-accion="sexo-m"
                   [class.bg-verde]="nuevoUsuario.sexo === 'M'"
                   [class.text-blanco]="nuevoUsuario.sexo === 'M'"
                   [class.border-verde]="nuevoUsuario.sexo === 'M'"
@@ -134,7 +132,7 @@
                   <i class="bi" [class.bi-check-circle-fill]="nuevoUsuario.sexo === 'M'" [class.bi-circle]="nuevoUsuario.sexo !== 'M'"></i>
                   Hombre
                 </button>
-                <button type="button" (click)="elegirSexo('F')"
+                <button type="button" data-accion="sexo-f"
                   [class.bg-verde]="nuevoUsuario.sexo === 'F'"
                   [class.text-blanco]="nuevoUsuario.sexo === 'F'"
                   [class.border-verde]="nuevoUsuario.sexo === 'F'"
@@ -154,7 +152,7 @@
           }
 
           <div class="flex gap-3 mt-3">
-            <button type="button" (click)="irALogin()" [disabled]="guardando()" class="flex-1 py-2 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde text-[12px] font-medium transition-colors disabled:opacity-50 cursor-pointer">
+            <button type="button" data-accion="ir-login" [disabled]="guardando()" class="flex-1 py-2 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde text-[12px] font-medium transition-colors disabled:opacity-50 cursor-pointer">
               Volver
             </button>
             <button type="submit" [disabled]="guardando()" class="flex-1 py-2 px-4 rounded-xl bg-boton text-blanco hover:bg-boton/80 text-[12px] font-semibold transition-colors disabled:opacity-50 cursor-pointer">
@@ -164,7 +162,6 @@
         </form>
       }
 
-      <!-- ============ VERIFICACIÓN DEL CÓDIGO ============ -->
       @case ("verificar"){
         <form (ngSubmit)="verificarCodigo()" class="bg-blanco w-full max-w-sm rounded-2xl border border-borde shadow-sm p-8 text-center tarjeta-login">
           <div class="mx-auto w-16 h-16 bg-fondo rounded-full flex items-center justify-center mb-4 border border-borde">
@@ -187,11 +184,11 @@
             {{ verificando() ? "Verificando..." : "Verificar" }}
           </button>
 
-          <button type="button" (click)="reenviarCodigo()" [disabled]="reenviando()" class="w-full mt-3 py-2.5 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer">
+          <button type="button" data-accion="reenviar-codigo" [disabled]="reenviando()" class="w-full mt-3 py-2.5 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer">
             {{ reenviando() ? "Enviando..." : "Reenviar código" }}
           </button>
 
-          <button type="button" (click)="irALogin()" class="mt-4 text-xs text-boton hover:text-texto transition-colors cursor-pointer">
+          <button type="button" data-accion="ir-login" class="mt-4 text-xs text-boton hover:text-texto transition-colors cursor-pointer">
             Volver al inicio de sesión
           </button>
         </form>

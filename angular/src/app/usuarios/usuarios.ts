@@ -1,11 +1,10 @@
-import{ Component, OnInit, Inject, PLATFORM_ID, signal, computed } from "@angular/core";
-import{ HttpClient } from "@angular/common/http";
+import{ Component, OnInit, AfterViewInit, ElementRef, Renderer2, Inject, PLATFORM_ID, signal, computed } from "@angular/core";
+import{ HttpClient, HttpErrorResponse } from "@angular/common/http";
 import{ CommonModule, isPlatformBrowser } from "@angular/common";
 import{ FormsModule } from "@angular/forms";
 import{ Router } from "@angular/router";
 import{ Header } from "../header/header";
 import{ FooterComponent } from "../footer/footer";
-import{ PREFIJOS, Pais } from "../prefijos";
 import{ cifrarId } from "../cifrado";
 import{ Auth } from "../auth";
 
@@ -21,7 +20,7 @@ interface Usuario{
   sexo?: string;
 }
 
-//Sub-usuarios del panel: solo datos básicos (sin email, contraseña, DNI ni teléfono)
+//Subusuarios
 interface NuevoUsuario{
   nombre: string;
   apellido1: string;
@@ -36,16 +35,18 @@ interface NuevoUsuario{
   templateUrl: "./usuarios.html",
   styleUrl: "./usuarios.scss"
 })
-export class Usuarios implements OnInit{
+export class Usuarios implements OnInit, AfterViewInit{
   private readonly apiUrl = "http://localhost:8080/api/usuarios";
-  readonly prefijos = PREFIJOS;
+  readonly maxUsuarios = 4;
 
-  //Usuario principal con la sesión iniciada: su tarjeta es la principal del panel
+  //Usuario principal
   usuarioLogeado = computed(() => this.auth.usuario());
 
   usuarios = signal<Usuario[]>([]);
   cargando = signal(true);
   error = signal<string | null>(null);
+
+  puedeCrear = computed(() => this.usuarios().length < this.maxUsuarios);
 
   usuarioABorrar = signal<Usuario | null>(null);
   borrando = signal(false);
@@ -55,21 +56,52 @@ export class Usuarios implements OnInit{
   errorCrear = signal<string | null>(null);
   nuevoUsuario: NuevoUsuario = this.formularioVacio();
 
-  //Desplegable prefijos telefónicos
-  prefijoAbierto = signal(false);
-  busquedaPrefijo = signal("");
-  paisSeleccionado = signal<Pais | null>(this.paisPorDefecto());
-  prefijosFiltrados = computed(() =>{
-    const q = this.normaliza(this.busquedaPrefijo());
-    if (!q){
-      return this.prefijos;
-    }
-    return this.prefijos.filter(
-      (p) => this.normaliza(p.name).includes(q) || p.phoneCode.includes(q)
-    );
-  });
+  constructor(private http: HttpClient, private router: Router, private auth: Auth, private el: ElementRef<HTMLElement>, private renderer: Renderer2, @Inject(PLATFORM_ID) private platformId: Object){}
 
-  constructor(private http: HttpClient, private router: Router, private auth: Auth, @Inject(PLATFORM_ID) private platformId: Object){}
+  ngAfterViewInit(): void{
+    this.renderer.listen(this.el.nativeElement, "click", (evento: Event) => this.onClic(evento));
+  }
+
+  private onClic(evento: Event): void{
+    const objetivo = (evento.target as HTMLElement).closest<HTMLElement>("[data-accion]");
+    if (!objetivo){
+      return;
+    }
+    switch (objetivo.dataset["accion"]){
+      case "ver-principal":{
+        const yo = this.usuarioLogeado();
+        if (yo){
+          this.verUsuario(yo);
+        }
+        break;
+      }
+      case "ver-usuario":{
+        const usuario = this.buscarUsuario(objetivo.dataset["id"]);
+        if (usuario){
+          this.verUsuario(usuario);
+        }
+        break;
+      }
+      case "borrar-usuario":{
+        const usuario = this.buscarUsuario(objetivo.dataset["id"]);
+        if (usuario){
+          this.pedirConfirmacion(usuario);
+        }
+        break;
+      }
+      case "abrir-crear": this.abrirCrear(); break;
+      case "cancelar-borrado": this.cancelarBorrado(); break;
+      case "confirmar-borrado": this.confirmarBorrado(); break;
+      case "cancelar-crear": this.cancelarCrear(); break;
+      case "sexo-m": this.elegirSexo("M"); break;
+      case "sexo-f": this.elegirSexo("F"); break;
+    }
+  }
+
+  private buscarUsuario(id: string | undefined): Usuario | undefined{
+    const idNum = Number(id);
+    return this.usuarios().find((u) => u.idUsuario === idNum);
+  }
 
   //Navega al panel del usuario pulsado (id cifrado en la URL)
   verUsuario(usuario: Usuario): void{
@@ -148,63 +180,15 @@ export class Usuarios implements OnInit{
     };
   }
 
-  private paisPorDefecto(): Pais | null{
-    return PREFIJOS.find((p) => p.code === "ES") ?? null;
-  }
-
-  private normaliza(texto: string): string{
-    return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-  }
-
   elegirSexo(valor: string): void{
     this.nuevoUsuario.sexo = valor;
   }
 
-  togglePrefijo(): void{
-    this.busquedaPrefijo.set("");
-    this.prefijoAbierto.update((abierto) => !abierto);
-  }
-
-  cerrarPrefijo(): void{
-    this.prefijoAbierto.set(false);
-  }
-
-  seleccionarPrefijo(pais: Pais): void{
-    this.paisSeleccionado.set(pais);
-    this.nuevoUsuario.prefijo = pais.phoneCode;
-    this.prefijoAbierto.set(false);
-  }
-
-  //Filtra la escritura de los teléfonos para que solo admitan dígitos
-  soloNumeros(evento: Event, campo: "telefono1" | "telefono2"): void{
-    const input = evento.target as HTMLInputElement;
-    const limpio = input.value.replace(/\D/g, "");
-    input.value = limpio;
-    this.nuevoUsuario[campo] = limpio;
-  }
-
-  //Valida un DNI o NIE español (formato + letra de control)
-  private dniNieValido(valor: string): boolean{
-    const v = valor.toUpperCase().trim();
-    const letras = "TRWAGMYFPDXBNJZSQVHLCKE";
-    let numero: number;
-    if (/^[0-9]{8}[A-Z]$/.test(v)){
-      numero = parseInt(v.substring(0, 8), 10);
-    } else if (/^[XYZ][0-9]{7}[A-Z]$/.test(v)){
-      const prefijoNie ={ X: "0", Y: "1", Z: "2" }[v[0]]!;
-      numero = parseInt(prefijoNie + v.substring(1, 8), 10);
-    } else{
-      return false;
-    }
-    return letras[numero % 23] === v[v.length - 1];
-  }
-
-  //Abre el modal de creación con el formulario en blanco
   abrirCrear(): void{
+    if (!this.puedeCrear()){
+      return;
+    }
     this.nuevoUsuario = this.formularioVacio();
-    this.paisSeleccionado.set(this.paisPorDefecto());
-    this.busquedaPrefijo.set("");
-    this.prefijoAbierto.set(false);
     this.errorCrear.set(null);
     this.mostrarCrear.set(true);
   }
@@ -223,6 +207,11 @@ export class Usuarios implements OnInit{
       return;
     }
 
+    if (!this.puedeCrear()){
+      this.errorCrear.set(`Solo puedes tener ${this.maxUsuarios} usuarios como máximo.`);
+      return;
+    }
+
     if (!u.nombre.trim() || !u.apellido1.trim()){
       this.errorCrear.set("El nombre y el primer apellido son obligatorios.");
       return;
@@ -233,12 +222,7 @@ export class Usuarios implements OnInit{
       apellido1: u.apellido1.trim(),
       apellido2: u.apellido2.trim() || null,
       sexo: u.sexo,
-      //Relaciona el sub-usuario nuevo con el usuario principal logeado
-      idUsuarioPrincipal: logeado.idUsuario,
-      //Los sub-usuarios del panel no llevan prefijo, teléfono ni DNI
-      prefijo: "+34",
-      telefono1: "0",
-      dni: "00000000X"
+      idUsuarioPrincipal: logeado.idUsuario
     };
 
     this.guardando.set(true);
@@ -249,10 +233,15 @@ export class Usuarios implements OnInit{
         this.guardando.set(false);
         this.mostrarCrear.set(false);
       },
-      error: (err) =>{
+      error: (err: HttpErrorResponse) =>{
         console.error("Error al crear el usuario:", err);
         this.guardando.set(false);
-        this.errorCrear.set("No se pudo crear el usuario. Revisa los datos (el DNI no puede repetirse).");
+        if (err.status === 409){
+          //El backend rechaza pasar del máximo de sub-usuarios
+          this.errorCrear.set(`Solo puedes tener ${this.maxUsuarios} usuarios como máximo.`);
+        }else{
+          this.errorCrear.set("No se pudo crear el usuario. Revisa los datos e inténtalo de nuevo.");
+        }
       }
     });
   }

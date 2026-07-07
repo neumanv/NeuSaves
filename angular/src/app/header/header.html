@@ -3,21 +3,37 @@
     <img src="NeuSaves.png" alt="Logo de NeuSaves" class="h-10 w-auto" />
     <span class="font-titulos text-2xl font-bold text-texto">NeuSaves</span>
 
+    <!-- Saldo del usuario logeado, coloreado según su cuantía -->
+    @if (saldoTexto(); as saldo){
+      <span class="ml-4 inline-flex items-center gap-1.5 text-sm font-semibold"
+        [class.text-peligro]="saldoNivel() === 'bajo'"
+        [class.text-aviso]="saldoNivel() === 'medio'"
+        [class.text-verde]="saldoNivel() === 'alto'">
+        <i class="bi bi-wallet2"></i>
+        {{ saldo }} €
+      </span>
+    }
+
     @if (mostrarPerfil()){
       <div class="relative ml-auto">
-        <button type="button" (click)="toggleMenu()" title="Perfil" id="perfil" class="w-10 h-10 rounded-full bg-fondo border border-borde flex items-center justify-center text-texto hover:bg-borde transition-colors cursor-pointer">
+        <button type="button" data-accion="abrir-menu" title="Perfil" id="perfil" class="w-10 h-10 rounded-full bg-fondo border border-borde flex items-center justify-center text-texto hover:bg-borde transition-colors cursor-pointer">
           <i class="bi bi-person-fill" style="font-size: 1.25rem;"></i>
         </button>
 
         @if (menuAbierto()){
-          <div class="fixed inset-0 z-40" (click)="cerrarMenu()"></div>
+          <div class="fixed inset-0 z-40" data-accion="cerrar-menu"></div>
           <div class="absolute right-0 z-50 mt-1 w-44 bg-blanco border border-borde rounded-lg shadow-xl overflow-hidden">
-            <button type="button" (click)="cerrarMenu()" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-texto hover:bg-fondo transition-colors cursor-pointer">
+            <button type="button" data-accion="cerrar-menu" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-texto hover:bg-fondo transition-colors cursor-pointer">
               Editar perfil
             </button>
-            <button type="button" (click)="salir()" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-peligro/80 hover:bg-peligro/10 transition-colors cursor-pointer">
+            @if (mostrarCambiarPerfil()){
+              <button type="button" data-accion="cambiar-perfil" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-texto hover:bg-fondo transition-colors cursor-pointer">
+                Cambiar de perfil
+              </button>
+            }
+            <button type="button" data-accion="pedir-salir" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-peligro/80 hover:bg-peligro/10 transition-colors cursor-pointer">
               <i class="bi bi-box-arrow-left"></i>
-              Salir
+              Cerrar sesión
             </button>
           </div>
         }
@@ -25,3 +41,19 @@
     }
   </div>
 </header>
+
+@if (confirmarSalir()){
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-texto/30 backdrop-blur-sm modal-overlay" data-accion="cancelar-salir">
+    <div class="relative bg-blanco text-texto font-texto w-full max-w-sm rounded-2xl border border-borde shadow-xl p-6 text-center modal-card" data-accion="noop">
+      <div class="mx-auto w-14 h-14 rounded-full flex items-center justify-center mb-4 border border-peligro text-peligro">
+        <i class="bi bi-box-arrow-left" style="font-size: 1.5rem;"></i>
+      </div>
+      <h3 class="font-titulos text-lg font-bold mb-1">Cerrar sesión</h3>
+      <p class="text-sm mb-6">¿Está seguro de cerrar sesión y salir de la aplicación?</p>
+      <div class="flex gap-3">
+        <button type="button" data-accion="cancelar-salir" class="flex-1 py-2.5 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde font-medium transition-colors cursor-pointer">Cancelar</button>
+        <button type="button" data-accion="confirmar-salir" class="flex-1 py-2.5 px-4 rounded-xl bg-peligro hover:bg-peligro/80 font-semibold transition-colors cursor-pointer">Cerrar sesión</button>
+      </div>
+    </div>
+  </div>
+}

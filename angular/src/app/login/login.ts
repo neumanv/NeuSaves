@@ -1,4 +1,4 @@
-import{ Component, OnInit, Inject, PLATFORM_ID, signal, computed } from "@angular/core";
+import{ Component, OnInit, AfterViewInit, ElementRef, Renderer2, Inject, PLATFORM_ID, signal, computed } from "@angular/core";
 import{ HttpClient, HttpErrorResponse } from "@angular/common/http";
 import{ CommonModule, isPlatformBrowser } from "@angular/common";
 import{ FormsModule } from "@angular/forms";
@@ -31,7 +31,7 @@ type Modo = "login" | "registro" | "verificar";
   templateUrl: "./login.html",
   styleUrl: "./login.scss"
 })
-export class Login implements OnInit{
+export class Login implements OnInit, AfterViewInit{
   private readonly apiUrl = "http://localhost:8080/api/auth";
   readonly prefijos = PREFIJOS;
 
@@ -70,7 +70,36 @@ export class Login implements OnInit{
     );
   });
 
-  constructor(private http: HttpClient, private router: Router, private auth: Auth, @Inject(PLATFORM_ID) private platformId: Object){}
+  constructor(private http: HttpClient, private router: Router, private auth: Auth, private el: ElementRef<HTMLElement>, private renderer: Renderer2, @Inject(PLATFORM_ID) private platformId: Object){}
+
+  //Un único manejador registra en TypeScript todos los clics de la plantilla (delegación por data-accion)
+  ngAfterViewInit(): void{
+    this.renderer.listen(this.el.nativeElement, "click", (evento: Event) => this.onClic(evento));
+  }
+
+  private onClic(evento: Event): void{
+    const objetivo = (evento.target as HTMLElement).closest<HTMLElement>("[data-accion]");
+    if (!objetivo){
+      return;
+    }
+    switch (objetivo.dataset["accion"]){
+      case "ver-contrasena": this.toggleVerContrasena(); break;
+      case "ir-registro": this.irARegistro(); break;
+      case "ir-login": this.irALogin(); break;
+      case "toggle-prefijo": this.togglePrefijo(); break;
+      case "cerrar-prefijo": this.cerrarPrefijo(); break;
+      case "seleccionar-prefijo":{
+        const pais = this.prefijos.find((p) => p.code === objetivo.dataset["codigo"]);
+        if (pais){
+          this.seleccionarPrefijo(pais);
+        }
+        break;
+      }
+      case "sexo-m": this.elegirSexo("M"); break;
+      case "sexo-f": this.elegirSexo("F"); break;
+      case "reenviar-codigo": this.reenviarCodigo(); break;
+    }
+  }
 
   ngOnInit(): void{
     //Si ya hay sesión iniciada no tiene sentido volver a pasar por el login

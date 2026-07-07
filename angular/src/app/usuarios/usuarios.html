@@ -1,20 +1,20 @@
 <div class="bg-fondo text-texto font-texto min-h-screen flex flex-col">
-  <app-header [mostrarPerfil]="true" />
-  <main class="flex-1 flex flex-col items-center py-12 px-4">
+  <app-header [mostrarPerfil]="true" [mostrarCambiarPerfil]="false" />
+  <main class="flex-1 w-[60%] mx-auto flex flex-col items-center py-12 px-4">
   <div class="text-center mb-10">
     <p class="text-xs font-semibold uppercase tracking-widest mb-1">Sistema de Gestión de Gastos</p>
     <h2 class="font-titulos text-3xl font-bold">Tus usuarios</h2>
   </div>
 
   @if(cargando()){
-    <p>Cargando usuarios desde la base de datos...</p>
+    <p>Cargando usuarios...</p>
   }@else if (error()){
     <p class="text-peligro font-semibold">Error:{{ error() }}</p>
   }@else{
     <div class="flex flex-wrap justify-center gap-6 w-full max-w-5xl">
-      <!-- Usuario con el que he iniciado sesión -->
+      <!-- Usuario principal -->
       @if (usuarioLogeado(); as yo){
-        <div role="button" tabindex="0" (click)="verUsuario(yo)" (keydown.enter)="verUsuario(yo)" class="relative bg-blanco p-6 rounded-2xl border-2 border-verde shadow-sm text-center w-64 flex flex-col items-center justify-center cursor-pointer transition-colors tarjeta-usuario">
+        <div role="button" tabindex="0" data-accion="ver-principal" (keydown.enter)="verUsuario(yo)" class="relative bg-blanco p-6 rounded-2xl border-2 border-verde shadow-sm text-center w-64 flex flex-col items-center justify-center cursor-pointer transition-colors tarjeta-usuario">
           <span class="absolute top-3 left-3 text-[10px] font-semibold uppercase tracking-wider bg-verde text-blanco rounded-full px-2 py-0.5">Principal</span>
           <div class="mx-auto w-16 h-16 bg-fondo rounded-full flex items-center justify-center mb-4 border border-verde">
             <i class="bi bi-person-check-fill" style="font-size: 2rem;"></i>
@@ -26,8 +26,8 @@
       }
 
       @for (usuario of usuarios(); track usuario.idUsuario){
-        <div role="button" tabindex="0" (click)="verUsuario(usuario)" (keydown.enter)="verUsuario(usuario)" class="relative bg-blanco p-6 rounded-2xl border border-borde shadow-sm text-center w-64 flex flex-col items-center justify-center cursor-pointer transition-colors tarjeta-usuario">
-          <button type="button" (click)="pedirConfirmacion(usuario); $event.stopPropagation()" title="Borrar usuario" id="borrar_usuario" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full border border-peligro text-peligro hover:bg-peligro hover:text-texto transition-colors cursor-pointer">
+        <div role="button" tabindex="0" data-accion="ver-usuario" [attr.data-id]="usuario.idUsuario" (keydown.enter)="verUsuario(usuario)" class="relative bg-blanco p-6 rounded-2xl border border-borde shadow-sm text-center w-64 flex flex-col items-center justify-center cursor-pointer transition-colors tarjeta-usuario">
+          <button type="button" data-accion="borrar-usuario" [attr.data-id]="usuario.idUsuario" title="Borrar usuario" id="borrar_usuario" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full border border-peligro text-peligro hover:bg-peligro hover:text-texto transition-colors cursor-pointer">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
@@ -41,14 +41,16 @@
         </div>
       }
 
-      <button type="button" id="nuevo_usuario" (click)="abrirCrear()" class="w-64 min-h-52 rounded-2xl border-2 border-dashed border-boton bg-blanco/60 hover:bg-blanco transition-colors flex flex-col items-center justify-center gap-3 cursor-pointer">
-        <div class="w-16 h-16 rounded-full bg-fondo border border-boton flex items-center justify-center">
-          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-        </div>
-        <span class="font-semibold">Nuevo usuario</span>
-      </button>
+      @if (puedeCrear()){
+        <button type="button" id="nuevo_usuario" data-accion="abrir-crear" class="w-64 min-h-52 rounded-2xl border-2 border-dashed border-boton bg-blanco/60 hover:bg-blanco transition-colors flex flex-col items-center justify-center gap-3 cursor-pointer">
+          <div class="w-16 h-16 rounded-full bg-fondo border border-boton flex items-center justify-center">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+          </div>
+          <span class="font-semibold">Nuevo usuario</span>
+        </button>
+      }
     </div>
   }
   </main>
@@ -56,8 +58,8 @@
 </div>
 
 @if (usuarioABorrar(); as usuario){
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-texto/30 backdrop-blur-sm modal-overlay" (click)="cancelarBorrado()">
-    <div class="relative bg-blanco text-texto font-texto w-full max-w-sm rounded-2xl border border-borde shadow-xl p-6 text-center modal-card" (click)="$event.stopPropagation()">
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-texto/30 backdrop-blur-sm modal-overlay" data-accion="cancelar-borrado">
+    <div class="relative bg-blanco text-texto font-texto w-full max-w-sm rounded-2xl border border-borde shadow-xl p-6 text-center modal-card" data-accion="noop">
       <div class="mx-auto w-14 h-14 rounded-full flex items-center justify-center mb-4 border border-peligro text-peligro">
         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -67,8 +69,8 @@
       <p class="text-sm mb-6"> ¿Seguro que quieres borrar a <span class="font-bold">{{ usuario.nombre }} {{ usuario.apellido1 }}</span>? Esta acción no se puede deshacer.
       </p>
       <div class="flex gap-3">
-        <button type="button" (click)="cancelarBorrado()" [disabled]="borrando()" class="flex-1 py-2.5 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde font-medium transition-colors disabled:opacity-50 cursor-pointer">Cancelar</button>
-        <button type="button" (click)="confirmarBorrado()" [disabled]="borrando()" class="flex-1 py-2.5 px-4 rounded-xl bg-peligro hover:bg-peligro/80 font-semibold transition-colors disabled:opacity-50 cursor-pointer">
+        <button type="button" data-accion="cancelar-borrado" [disabled]="borrando()" class="flex-1 py-2.5 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde font-medium transition-colors disabled:opacity-50 cursor-pointer">Cancelar</button>
+        <button type="button" data-accion="confirmar-borrado" [disabled]="borrando()" class="flex-1 py-2.5 px-4 rounded-xl bg-peligro hover:bg-peligro/80 font-semibold transition-colors disabled:opacity-50 cursor-pointer">
           {{ borrando() ? 'Borrando...' : 'Sí, borrar' }}
         </button>
       </div>
@@ -77,8 +79,8 @@
 }
 
 @if (mostrarCrear()){
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-texto/30 backdrop-blur-sm modal-overlay" (click)="cancelarCrear()">
-    <form #formCrear="ngForm" (ngSubmit)="crearUsuario()" class="relative bg-blanco text-texto font-texto w-full max-w-xl rounded-2xl border border-borde shadow-xl p-4 text-[12px] modal-card"(click)="$event.stopPropagation()">
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-texto/30 backdrop-blur-sm modal-overlay" data-accion="cancelar-crear">
+    <form #formCrear="ngForm" (ngSubmit)="crearUsuario()" class="relative bg-blanco text-texto font-texto w-full max-w-xl rounded-2xl border border-borde shadow-xl p-4 text-[12px] modal-card" data-accion="noop">
       <div class="text-center mb-3">
         <div class="mx-auto w-12 h-12 bg-fondo rounded-full flex items-center justify-center mb-2 border border-borde">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -87,7 +89,6 @@
         </div>
         <h3 class="font-titulos text-lg font-bold">Nuevo usuario</h3>
       </div>
-      <!-- Sub-usuarios del panel: solo datos básicos -->
       <div class="grid grid-cols-2 gap-3">
         <label class="col-span-2 font-medium">Nombre *
           <input name="nombre" [(ngModel)]="nuevoUsuario.nombre" required maxlength="50" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-boton" />
@@ -102,7 +103,7 @@
         <div class="col-span-2 font-medium">
           Sexo *
           <div class="mt-1 grid grid-cols-2 gap-3">
-            <button type="button" (click)="elegirSexo('M')"
+            <button type="button" data-accion="sexo-m"
               [class.bg-verde]="nuevoUsuario.sexo === 'M'"
               [class.text-blanco]="nuevoUsuario.sexo === 'M'"
               [class.border-verde]="nuevoUsuario.sexo === 'M'"
@@ -113,7 +114,7 @@
               <i class="bi" [class.bi-check-circle-fill]="nuevoUsuario.sexo === 'M'" [class.bi-circle]="nuevoUsuario.sexo !== 'M'"></i>
               Hombre
             </button>
-            <button type="button" (click)="elegirSexo('F')"
+            <button type="button" data-accion="sexo-f"
               [class.bg-verde]="nuevoUsuario.sexo === 'F'"
               [class.text-blanco]="nuevoUsuario.sexo === 'F'"
               [class.border-verde]="nuevoUsuario.sexo === 'F'"
@@ -133,7 +134,7 @@
       }
 
       <div class="flex gap-3 mt-4">
-        <button type="button" (click)="cancelarCrear()" [disabled]="guardando()" class="flex-1 py-2.5 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde text-[12px] font-medium transition-colors disabled:opacity-50 cursor-pointer">
+        <button type="button" data-accion="cancelar-crear" [disabled]="guardando()" class="flex-1 py-2.5 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde text-[12px] font-medium transition-colors disabled:opacity-50 cursor-pointer">
           Cancelar
         </button>
         <button type="submit" [disabled]="guardando()" class="flex-1 py-2.5 px-4 rounded-xl bg-boton text-blanco hover:bg-boton/80 text-[12px] font-semibold transition-colors disabled:opacity-50 cursor-pointer">

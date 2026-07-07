@@ -1,4 +1,4 @@
-import{ Component, OnInit, Inject, PLATFORM_ID, signal } from "@angular/core";
+import{ Component, OnInit, Inject, PLATFORM_ID, signal, computed } from "@angular/core";
 import{ HttpClient } from "@angular/common/http";
 import{ CommonModule, isPlatformBrowser } from "@angular/common";
 import{ ActivatedRoute } from "@angular/router";
@@ -11,6 +11,7 @@ interface Usuario{
   nombre: string;
   apellido1: string;
   apellido2?: string;
+  saldo?: number;
 }
 
 @Component({
@@ -21,8 +22,29 @@ interface Usuario{
 })
 export class UsuarioDetalle implements OnInit{
   private readonly apiUrl = "http://localhost:8080/api/usuarios";
+  private readonly movimientosUrl = "http://localhost:8080/api/movimientos-usuarios";
 
   usuario = signal<Usuario | null>(null);
+  //Movimientos del usuario en el mes actual (0 si no hay ninguno)
+  movimientosMes = signal(0);
+
+  //Saldo del usuario mostrado, formateado a 2 decimales. Si es null se muestra 0
+  saldoTexto = computed(() =>{
+    const saldo = this.usuario()?.saldo ?? 0;
+    return saldo.toFixed(2);
+  });
+
+  //Nivel de saldo para colorearlo: bajo (<300) rojo, medio (300-1000) ámbar, alto (>1000) verde
+  saldoNivel = computed<"bajo" | "medio" | "alto">(() =>{
+    const saldo = this.usuario()?.saldo ?? 0;
+    if (saldo < 300){
+      return "bajo";
+    }
+    if (saldo > 1000){
+      return "alto";
+    }
+    return "medio";
+  });
 
   //Saludo según la hora del día
   get saludo(): string{
@@ -43,21 +65,31 @@ export class UsuarioDetalle implements OnInit{
       return;
     }
 
-    //El usuario llega en el estado de la navegación al pulsar la tarjeta
+    //El usuario llega en el estado de la navegación al pulsar la tarjeta: se muestra al instante
     const estado = history.state as{ usuario?: Usuario };
     if (estado?.usuario){
       this.usuario.set(estado.usuario);
-      return;
     }
 
-    //Si se entra directamente por URL (o se refresca), se descifra el token de la ruta
+    //Aun así se recarga del backend por id para tener el saldo actualizado
     const id = descifrarId(this.ruta.snapshot.paramMap.get("token") ?? "");
     if (id === null){
       return;
     }
     this.http.get<Usuario[]>(this.apiUrl).subscribe({
-      next: (usuarios) => this.usuario.set(usuarios.find((u) => u.idUsuario === id) ?? null),
+      next: (usuarios) =>{
+        const encontrado = usuarios.find((u) => u.idUsuario === id);
+        if (encontrado){
+          this.usuario.set(encontrado);
+        }
+      },
       error: (err) => console.error("Error al cargar el usuario:", err)
+    });
+
+    //Número de movimientos del usuario en el mes actual
+    this.http.get<number>(`${this.movimientosUrl}/count?usuario=${id}`).subscribe({
+      next: (total) => this.movimientosMes.set(total ?? 0),
+      error: (err) => console.error("Error al cargar los movimientos:", err)
     });
   }
 }
