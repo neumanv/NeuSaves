@@ -1,6 +1,6 @@
 <div class="bg-fondo text-texto font-texto min-h-screen flex flex-col">
   <app-header [mostrarPerfil]="true" />
-  <main class="flex-1 w-[60%] mx-auto flex flex-col items-center py-12 px-4">
+  <main class="flex-1 w-[92%] max-w-7xl mx-auto flex flex-col items-center py-12 px-4">
     @if (usuario(); as u){
       <h1 class="font-titulos text-3xl font-bold text-center">
         {{ saludo }}, {{ u.nombre }} {{ u.apellido1 }}
@@ -8,25 +8,163 @@
     }
 
     @if (usuario()){
-      <div class="self-start mt-8 flex flex-wrap gap-6">
-        <!-- Saldo: texto y, debajo, el importe en grande y coloreado (0 si es null) -->
-        <div class="bg-blanco border border-borde rounded-2xl shadow-sm px-8 py-6 text-left">
+      <div class="self-stretch mt-8 grid grid-cols-5 gap-4 items-stretch">
+        <div class="bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-6 text-left min-w-0">
           <p class="text-sm font-medium">Tu saldo:</p>
-          <p class="font-titulos text-5xl font-bold mt-2"
+          <p class="font-titulos text-4xl font-bold mt-2"
             [class.text-peligro]="saldoNivel() === 'bajo'"
             [class.text-aviso]="saldoNivel() === 'medio'"
             [class.text-verde]="saldoNivel() === 'alto'">
             {{ saldoTexto() }} €
           </p>
         </div>
-
-        <!-- Movimientos del mes actual: cantidad en grande, siempre en negro -->
-        <div class="bg-blanco border border-borde rounded-2xl shadow-sm px-8 py-6 text-left">
+        <div class="bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-6 text-left min-w-0">
           <p class="text-sm font-medium">Movimientos de este mes:</p>
-          <p class="font-titulos text-5xl font-bold mt-2 text-texto">
+          <p class="font-titulos text-4xl font-bold mt-2 text-texto">
             {{ movimientosMes() }}
           </p>
         </div>
+        <div class="col-span-2 bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-6 text-left flex gap-6 min-w-0">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium">Ingresos de este mes:</p>
+            <p class="font-titulos text-4xl font-bold mt-2 text-verde">
+              +{{ ingresosTexto() }} €
+            </p>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium">Gastos de este mes:</p>
+            <p class="font-titulos text-4xl font-bold mt-2 text-peligro">
+              -{{ gastosTexto() }} €
+            </p>
+          </div>
+        </div>
+        <div class="bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-6 text-left min-w-0">
+          <p class="text-sm font-medium">Ahorrado este mes:</p>
+          <p class="font-titulos text-4xl font-bold mt-2"
+            [class.text-peligro]="ahorradoNivel() === 'bajo'"
+            [class.text-aviso]="ahorradoNivel() === 'medio'"
+            [class.text-verde]="ahorradoNivel() === 'alto'">
+            {{ ahorradoTexto() }} €
+          </p>
+        </div>
+      </div>
+
+      <!-- Debajo de las tarjetas: tabla de movimientos a la izquierda y estadísticas a la derecha -->
+      <div class="self-stretch mt-6 flex flex-col gap-6">
+      <!-- Fila superior: tabla de movimientos y estadísticas, a la misma altura -->
+      <div class="flex flex-col lg:flex-row gap-6 items-stretch">
+      <!-- Tabla de últimos movimientos: con enlace "Ver todos" arriba a la derecha -->
+      <div class="w-full lg:w-1/2 bg-blanco border border-borde rounded-2xl shadow-sm overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-borde">
+          <h2 class="font-titulos text-lg font-bold">Últimos movimientos</h2>
+          <a class="text-sm font-medium text-verde hover:underline cursor-pointer">Ver todos</a>
+        </div>
+
+        <table class="w-full text-sm text-left">
+          <thead class="text-texto/60 border-b border-borde">
+            <tr>
+              <th class="px-6 py-3 font-medium">Descripción</th>
+              <th class="px-4 py-3 font-medium">Tipo</th>
+              <th class="px-4 py-3 font-medium">Fecha</th>
+              <th class="px-6 py-3 font-medium text-right">Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of ultimosMovimientos(); track $index){
+              <tr class="border-b border-borde/50 last:border-0">
+                <!-- Descripción: sólida hasta 20 caracteres y luego se desvanece -->
+                <td class="px-6 py-3">
+                  <span class="block max-w-[22ch] overflow-hidden whitespace-nowrap align-bottom
+                    [mask-image:linear-gradient(to_right,#000_20ch,transparent_22ch)]
+                    [-webkit-mask-image:linear-gradient(to_right,#000_20ch,transparent_22ch)]"
+                    [title]="m.descripcion">{{ m.descripcion }}</span>
+                </td>
+                <td class="px-4 py-3">{{ m.tipo }}</td>
+                <td class="px-4 py-3">{{ m.fechaMovimiento | date:"dd/MM/yyyy" }}</td>
+                <!-- Cantidad: rojo si es gasto (S), verde si es ingreso (N) -->
+                <td class="px-6 py-3 text-right font-semibold whitespace-nowrap"
+                  [class.text-peligro]="m.gasto === 'S'"
+                  [class.text-verde]="m.gasto === 'N'">
+                  {{ m.gasto === 'S' ? '-' : '+' }}{{ m.cantidad | number:"1.2-2" }} €
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="px-6 py-6 text-center text-texto/50">No hay movimientos todavía</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Estadísticas: tarjeta con gráfica lineal (datos inventados), con el mismo hover que las tarjetas de usuarios -->
+      <div class="w-full lg:w-1/2 bg-blanco border border-borde rounded-2xl shadow-sm overflow-hidden transition-colors hover:bg-fondo/40 cursor-pointer flex flex-col">
+        <div class="px-6 py-4 border-b border-borde">
+          <h2 class="font-titulos text-lg font-bold">Estadísticas</h2>
+        </div>
+
+        <div class="px-6 py-4 flex-1 flex items-center">
+          <svg viewBox="0 0 480 220" class="w-full h-auto" role="img" aria-label="Gráfica lineal del balance de los últimos 6 meses">
+            <!-- Líneas horizontales de referencia -->
+            <g stroke="var(--color-borde)" stroke-width="1">
+              <line x1="40" y1="20"  x2="470" y2="20" />
+              <line x1="40" y1="60"  x2="470" y2="60" />
+              <line x1="40" y1="100" x2="470" y2="100" />
+              <line x1="40" y1="140" x2="470" y2="140" />
+              <line x1="40" y1="180" x2="470" y2="180" />
+            </g>
+
+            <!-- Etiquetas del eje Y -->
+            <g fill="currentColor" opacity="0.5" font-size="10" text-anchor="end">
+              <text x="34" y="23">2000</text>
+              <text x="34" y="63">1500</text>
+              <text x="34" y="103">1000</text>
+              <text x="34" y="143">500</text>
+              <text x="34" y="183">0</text>
+            </g>
+
+            <!-- Área bajo la línea -->
+            <path d="M 55 130 L 130 90 L 205 115 L 280 60 L 355 80 L 445 40 L 445 180 L 55 180 Z"
+              fill="var(--color-verde)" opacity="0.12" />
+
+            <!-- Línea del balance -->
+            <path d="M 55 130 L 130 90 L 205 115 L 280 60 L 355 80 L 445 40"
+              fill="none" stroke="var(--color-verde)" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round" />
+
+            <!-- Puntos -->
+            <g fill="var(--color-verde)">
+              <circle cx="55"  cy="130" r="4" />
+              <circle cx="130" cy="90"  r="4" />
+              <circle cx="205" cy="115" r="4" />
+              <circle cx="280" cy="60"  r="4" />
+              <circle cx="355" cy="80"  r="4" />
+              <circle cx="445" cy="40"  r="4" />
+            </g>
+
+            <!-- Etiquetas del eje X (meses) -->
+            <g fill="currentColor" opacity="0.5" font-size="10" text-anchor="middle">
+              <text x="55"  y="200">Feb</text>
+              <text x="130" y="200">Mar</text>
+              <text x="205" y="200">Abr</text>
+              <text x="280" y="200">May</text>
+              <text x="355" y="200">Jun</text>
+              <text x="445" y="200">Jul</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+      </div>
+
+      <!-- Tarjeta-botón "Metas": debajo de la tabla, pequeña, texto e icono azules y sin subrayado -->
+      <a [routerLink]="['/metas', token]"
+        class="enlace-limpio w-full lg:w-1/2 bg-blanco border border-borde rounded-2xl shadow-sm px-4 py-3 flex items-center justify-between transition-colors hover:bg-fondo/40 cursor-pointer">
+        <span class="flex items-center gap-2 text-texto">
+          <i class="bi bi-flag-fill"></i>
+          <span class="font-titulos text-base font-bold">Metas</span>
+        </span>
+        <i class="bi bi-chevron-right text-texto"></i>
+      </a>
       </div>
     }
   </main>

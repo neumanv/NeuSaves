@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
-import java.math.BigDecimal;
-
 @Entity
 @Table(name = "usuarios")
 public class Usuario{
@@ -56,10 +54,6 @@ public class Usuario{
 
     @Column(name = "id_usuario_principal")
     private Long idUsuarioPrincipal;
-
-    //Saldo del usuario, con 2 decimales como máximo. Arranca a 0 para no insertar null
-    @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal saldo = BigDecimal.ZERO;
 
     public Long getIdUsuario(){
         return idUsuario;
@@ -157,12 +151,5 @@ public class Usuario{
     }
     public void setIdUsuarioPrincipal(Long idUsuarioPrincipal){
         this.idUsuarioPrincipal = idUsuarioPrincipal;
-    }
-
-    public BigDecimal getSaldo(){
-        return saldo;
-    }
-    public void setSaldo(BigDecimal saldo){
-        this.saldo = saldo;
     }
 }

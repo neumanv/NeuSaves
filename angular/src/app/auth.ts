@@ -16,7 +16,6 @@ export interface UsuarioSesion{
   sexo?: string;
   verificado?: boolean;
   idUsuarioPrincipal?: number | null;
-  saldo?: number;
 }
 
 const CLAVE_SESION = "neusaves_usuario";

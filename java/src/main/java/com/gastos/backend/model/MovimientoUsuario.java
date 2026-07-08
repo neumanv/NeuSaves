@@ -2,6 +2,7 @@ package com.gastos.backend.model;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
@@ -21,6 +22,12 @@ public class MovimientoUsuario{
 
     @Column(nullable = false, length = 100)
     private String descripcion;
+
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal cantidad = BigDecimal.ZERO;
+
+    @Column(insertable = false, updatable = false, precision = 12, scale = 2)
+    private BigDecimal saldo;
 
     @Column(name = "fecha_movimiento")
     private LocalDate fechaMovimiento;
@@ -54,6 +61,20 @@ public class MovimientoUsuario{
     }
     public void setDescripcion(String descripcion){
         this.descripcion = descripcion;
+    }
+
+    public BigDecimal getCantidad(){
+        return cantidad;
+    }
+    public void setCantidad(BigDecimal cantidad){
+        this.cantidad = cantidad;
+    }
+
+    public BigDecimal getSaldo(){
+        return saldo;
+    }
+    public void setSaldo(BigDecimal saldo){
+        this.saldo = saldo;
     }
 
     public LocalDate getFechaMovimiento(){

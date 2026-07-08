@@ -3,17 +3,6 @@
     <img src="NeuSaves.png" alt="Logo de NeuSaves" class="h-10 w-auto" />
     <span class="font-titulos text-2xl font-bold text-texto">NeuSaves</span>
 
-    <!-- Saldo del usuario logeado, coloreado según su cuantía -->
-    @if (saldoTexto(); as saldo){
-      <span class="ml-4 inline-flex items-center gap-1.5 text-sm font-semibold"
-        [class.text-peligro]="saldoNivel() === 'bajo'"
-        [class.text-aviso]="saldoNivel() === 'medio'"
-        [class.text-verde]="saldoNivel() === 'alto'">
-        <i class="bi bi-wallet2"></i>
-        {{ saldo }} €
-      </span>
-    }
-
     @if (mostrarPerfil()){
       <div class="relative ml-auto">
         <button type="button" data-accion="abrir-menu" title="Perfil" id="perfil" class="w-10 h-10 rounded-full bg-fondo border border-borde flex items-center justify-center text-texto hover:bg-borde transition-colors cursor-pointer">

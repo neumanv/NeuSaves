@@ -1,0 +1,96 @@
+<div class="bg-fondo text-texto font-texto min-h-screen flex flex-col">
+  <app-header [mostrarPerfil]="true" />
+  <main class="flex-1 w-[92%] max-w-4xl mx-auto flex flex-col pt-4 pb-12 px-4">
+    <!-- Botón volver al panel del usuario -->
+    <a [routerLink]="['/panel-usuario', token]"
+      class="self-start mb-8 inline-flex items-center gap-2 text-sm font-medium text-texto no-underline transition-transform hover:-translate-x-1 cursor-pointer">
+      <i class="bi bi-arrow-left-circle"></i>
+      Volver
+    </a>
+
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="font-titulos text-3xl font-bold">Metas</h1>
+      <button type="button" (click)="abrirModal()"
+        class="flex items-center gap-2 py-2.5 px-4 rounded-xl bg-boton text-blanco hover:bg-boton/80 font-semibold transition-colors cursor-pointer">
+        <i class="bi bi-plus-lg"></i>
+        Nueva meta
+      </button>
+    </div>
+
+    <div class="flex flex-col gap-3">
+      @for (meta of metas(); track meta.idMetaUsuario){
+        <div class="bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-4 flex items-start gap-4">
+          <!-- Check para marcar la meta como completada -->
+          <button type="button" (click)="alternarCompletado(meta)"
+            [title]="meta.completado === 'S' ? 'Marcar como pendiente' : 'Marcar como completada'"
+            class="mt-0.5 w-6 h-6 shrink-0 rounded-md border flex items-center justify-center transition-colors cursor-pointer"
+            [class.bg-verde]="meta.completado === 'S'"
+            [class.border-verde]="meta.completado === 'S'"
+            [class.text-blanco]="meta.completado === 'S'"
+            [class.border-borde]="meta.completado !== 'S'"
+            [class.bg-fondo]="meta.completado !== 'S'">
+            @if (meta.completado === 'S'){
+              <i class="bi bi-check-lg"></i>
+            }
+          </button>
+
+          <div class="min-w-0">
+            <h2 class="font-titulos text-lg font-bold"
+              [class.line-through]="meta.completado === 'S'"
+              [class.opacity-60]="meta.completado === 'S'">
+              {{ meta.titulo }}
+            </h2>
+            <p class="text-sm text-texto/70" [class.opacity-60]="meta.completado === 'S'">
+              {{ meta.descripcion }}
+            </p>
+          </div>
+        </div>
+      } @empty {
+        <div class="bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-10 text-center text-texto/50">
+          Todavía no tienes metas. Crea una con el botón "Nueva meta".
+        </div>
+      }
+    </div>
+  </main>
+  <app-footer/>
+</div>
+
+<!-- Modal emergente para crear una nueva meta -->
+@if (modalAbierto()){
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-texto/30 backdrop-blur-sm modal-overlay" (click)="cerrarModal()">
+    <form #formMeta="ngForm" (ngSubmit)="crearMeta()" (click)="$event.stopPropagation()"
+      class="relative bg-blanco text-texto font-texto w-full max-w-md rounded-2xl border border-borde shadow-xl p-6 modal-card">
+      <div class="text-center mb-4">
+        <div class="mx-auto w-12 h-12 bg-fondo rounded-full flex items-center justify-center mb-2 border border-borde">
+          <i class="bi bi-flag" style="font-size: 1.25rem;"></i>
+        </div>
+        <h3 class="font-titulos text-lg font-bold">Nueva meta</h3>
+      </div>
+
+      <label class="block font-medium text-sm">Título *
+        <input name="titulo" [(ngModel)]="nuevaMeta.titulo" required maxlength="50"
+          class="mt-1 block w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton" />
+      </label>
+
+      <label class="block font-medium text-sm mt-3">Descripción *
+        <textarea name="descripcion" [(ngModel)]="nuevaMeta.descripcion" required maxlength="100" rows="3"
+          class="mt-1 block w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:border-boton"></textarea>
+      </label>
+
+      @if (errorCrear()){
+        <p class="text-peligro text-sm mt-3 font-semibold">{{ errorCrear() }}</p>
+      }
+
+      <div class="flex gap-3 mt-5">
+        <button type="button" (click)="cerrarModal()" [disabled]="guardando()"
+          class="flex-1 py-2.5 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde font-medium transition-colors disabled:opacity-50 cursor-pointer">
+          Cancelar
+        </button>
+        <button type="submit" [disabled]="guardando()"
+          class="flex-1 py-2.5 px-4 rounded-xl bg-boton text-blanco hover:bg-boton/80 font-semibold transition-colors disabled:opacity-50 cursor-pointer">
+          {{ guardando() ? 'Guardando...' : 'Crear meta' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}
