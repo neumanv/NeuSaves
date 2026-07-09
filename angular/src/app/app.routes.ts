@@ -3,6 +3,7 @@ import { Login } from './login/login';
 import { Usuarios } from './usuarios/usuarios';
 import { UsuarioDetalle } from './usuario-detalle/usuario-detalle';
 import { Metas } from './metas/metas';
+import { Perfil } from './perfil/perfil';
 import { authGuard } from './auth';
 
 export const routes: Routes = [

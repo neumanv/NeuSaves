@@ -3,7 +3,7 @@
   <main class="flex-1 w-[92%] max-w-4xl mx-auto flex flex-col pt-4 pb-12 px-4">
     <!-- Botón volver al panel del usuario -->
     <a [routerLink]="['/panel-usuario', token]"
-      class="self-start mb-8 inline-flex items-center gap-2 text-sm font-medium text-texto no-underline transition-transform hover:-translate-x-1 cursor-pointer">
+      class="enlace-limpio self-start mb-8 inline-flex items-center gap-2 text-sm font-medium transition-transform hover:-translate-x-1 cursor-pointer">
       <i class="bi bi-arrow-left-circle"></i>
       Volver
     </a>
@@ -18,8 +18,27 @@
     </div>
 
     <div class="flex flex-col gap-3">
-      @for (meta of metas(); track meta.idMetaUsuario){
-        <div class="bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-4 flex items-start gap-4">
+      @for (meta of metas(); track meta.idMetaUsuario; let i = $index){
+        <div draggable="true"
+          (dragstart)="alEmpezarArrastre(i)"
+          (dragover)="alArrastrarSobre($event, i)"
+          (dragend)="alTerminarArrastre()"
+          class="relative bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-4 pr-14 flex items-start gap-4 transition-opacity"
+          [class.opacity-40]="arrastrando() === i"
+          [class.cursor-grabbing]="arrastrando() === i">
+          <!-- Botón de borrar la meta (arriba a la derecha), con confirmación -->
+          <button type="button" (click)="pedirBorrar(meta)" draggable="false" title="Borrar meta" id="borrar_meta"
+            class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full border border-peligro text-peligro hover:bg-peligro hover:text-blanco transition-colors cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+
+          <!-- Asa de arrastre -->
+          <span class="mt-1 shrink-0 text-texto/40 cursor-grab" title="Arrastra para reordenar">
+            <i class="bi bi-grip-vertical" style="font-size: 1.25rem;"></i>
+          </span>
+
           <!-- Check para marcar la meta como completada -->
           <button type="button" (click)="alternarCompletado(meta)"
             [title]="meta.completado === 'S' ? 'Marcar como pendiente' : 'Marcar como completada'"
@@ -67,15 +86,17 @@
         <h3 class="font-titulos text-lg font-bold">Nueva meta</h3>
       </div>
 
-      <label class="block font-medium text-sm">Título *
-        <input name="titulo" [(ngModel)]="nuevaMeta.titulo" required maxlength="50"
-          class="mt-1 block w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton" />
-      </label>
+      <div class="campo-form">
+        <label for="meta-titulo" class="block font-medium text-sm mb-1">Título *</label>
+        <input id="meta-titulo" name="titulo" [(ngModel)]="nuevaMeta.titulo" required maxlength="50"
+          class="campo-form bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton" />
+      </div>
 
-      <label class="block font-medium text-sm mt-3">Descripción *
-        <textarea name="descripcion" [(ngModel)]="nuevaMeta.descripcion" required maxlength="100" rows="3"
-          class="mt-1 block w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:border-boton"></textarea>
-      </label>
+      <div class="campo-form mt-3">
+        <label for="meta-descripcion" class="block font-medium text-sm mb-1">Descripción *</label>
+        <textarea id="meta-descripcion" name="descripcion" [(ngModel)]="nuevaMeta.descripcion" required maxlength="100" rows="3"
+          class="campo-form bg-fondo border border-borde rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:border-boton"></textarea>
+      </div>
 
       @if (errorCrear()){
         <p class="text-peligro text-sm mt-3 font-semibold">{{ errorCrear() }}</p>
@@ -92,5 +113,28 @@
         </button>
       </div>
     </form>
+  </div>
+}
+
+<!-- Modal de confirmación para borrar una meta -->
+@if (metaABorrar(); as meta){
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-texto/30 backdrop-blur-sm modal-overlay" (click)="cancelarBorrar()">
+    <div class="relative bg-blanco text-texto font-texto w-full max-w-sm rounded-2xl border border-borde shadow-xl p-6 text-center modal-card" (click)="$event.stopPropagation()">
+      <div class="mx-auto w-14 h-14 rounded-full flex items-center justify-center mb-4 border border-peligro text-peligro">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <h3 class="font-titulos text-lg font-bold mb-1">Borrar meta</h3>
+      <p class="text-sm mb-6">¿Seguro que quieres borrar <span class="font-bold">{{ meta.titulo }}</span>? Esta acción no se puede deshacer.</p>
+      <div class="flex gap-3">
+        <button type="button" (click)="cancelarBorrar()" [disabled]="borrando()"
+          class="flex-1 py-2.5 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde font-medium transition-colors disabled:opacity-50 cursor-pointer">Cancelar</button>
+        <button type="button" (click)="confirmarBorrar()" [disabled]="borrando()"
+          class="flex-1 py-2.5 px-4 rounded-xl bg-peligro text-blanco hover:bg-peligro/80 font-semibold transition-colors disabled:opacity-50 cursor-pointer">
+          {{ borrando() ? 'Borrando...' : 'Sí, borrar' }}
+        </button>
+      </div>
+    </div>
   </div>
 }

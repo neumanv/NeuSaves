@@ -37,5 +37,6 @@ CREATE TABLE IF NOT EXISTS metas_usuario ( --metas/objetivos de cada usuario
     id_usuario   BIGINT NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
     titulo       VARCHAR(50) NOT NULL,
     descripcion  VARCHAR(100) NOT NULL,
-    completado   VARCHAR(1) NOT NULL DEFAULT 'N' CHECK (completado IN ('S', 'N'))
+    completado   VARCHAR(1) NOT NULL DEFAULT 'N' CHECK (completado IN ('S', 'N')),
+    orden        INT NOT NULL DEFAULT 0 --posición en la lista (arrastrable); menor primero
 );

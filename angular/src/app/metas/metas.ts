@@ -13,6 +13,7 @@ interface Meta{
   titulo: string;
   descripcion: string;
   completado: string; //'S' | 'N'
+  orden?: number;
 }
 
 @Component({
@@ -34,6 +35,13 @@ export class Metas implements OnInit{
   guardando = signal(false);
   errorCrear = signal("");
   nuevaMeta = { titulo: "", descripcion: "" };
+
+  //Índice de la meta que se está arrastrando (null si no hay arrastre)
+  arrastrando = signal<number | null>(null);
+
+  //Meta pendiente de confirmar borrado (null si no hay ninguna)
+  metaABorrar = signal<Meta | null>(null);
+  borrando = signal(false);
 
   constructor(private http: HttpClient, private ruta: ActivatedRoute, @Inject(PLATFORM_ID) private platformId: Object){}
 
@@ -71,6 +79,72 @@ export class Metas implements OnInit{
     });
   }
 
+  //--- Arrastre para reordenar las metas ---
+  alEmpezarArrastre(indice: number): void{
+    this.arrastrando.set(indice);
+  }
+
+  //Al pasar por encima de otra meta, se reordena la lista en vivo
+  alArrastrarSobre(evento: DragEvent, indice: number): void{
+    evento.preventDefault();
+    const origen = this.arrastrando();
+    if (origen === null || origen === indice){
+      return;
+    }
+    this.metas.update((lista) =>{
+      const copia = [...lista];
+      const [movida] = copia.splice(origen, 1);
+      copia.splice(indice, 0, movida);
+      return copia;
+    });
+    this.arrastrando.set(indice);
+  }
+
+  //Al soltar, se guarda el nuevo orden en el backend
+  alTerminarArrastre(): void{
+    this.arrastrando.set(null);
+    this.guardarOrden();
+  }
+
+  private guardarOrden(): void{
+    const id = this.idUsuario();
+    if (id === null){
+      return;
+    }
+    const ids = this.metas().map((m) => m.idMetaUsuario);
+    this.http.put(`${this.metasUrl}/orden?usuario=${id}`, ids).subscribe({
+      error: (err) => console.error("Error al guardar el orden:", err)
+    });
+  }
+
+  //--- Borrado de metas con confirmación ---
+  pedirBorrar(meta: Meta): void{
+    this.metaABorrar.set(meta);
+  }
+
+  cancelarBorrar(): void{
+    this.metaABorrar.set(null);
+  }
+
+  confirmarBorrar(): void{
+    const meta = this.metaABorrar();
+    if (!meta){
+      return;
+    }
+    this.borrando.set(true);
+    this.http.delete(`${this.metasUrl}/${meta.idMetaUsuario}`).subscribe({
+      next: () =>{
+        this.metas.update((lista) => lista.filter((m) => m.idMetaUsuario !== meta.idMetaUsuario));
+        this.borrando.set(false);
+        this.metaABorrar.set(null);
+      },
+      error: (err) =>{
+        this.borrando.set(false);
+        console.error("Error al borrar la meta:", err);
+      }
+    });
+  }
+
   abrirModal(): void{
     this.nuevaMeta = { titulo: "", descripcion: "" };
     this.errorCrear.set("");
@@ -93,7 +167,8 @@ export class Metas implements OnInit{
     this.guardando.set(true);
     this.http.post<Meta>(this.metasUrl, { idUsuario: id, titulo, descripcion }).subscribe({
       next: (creada) =>{
-        this.metas.update((lista) => [creada, ...lista]);
+        //La nueva meta se añade al final (así la coloca el backend)
+        this.metas.update((lista) => [...lista, creada]);
         this.guardando.set(false);
         this.modalAbierto.set(false);
       },

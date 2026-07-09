@@ -31,25 +31,20 @@ h1, h2, h3, h4, h5, h6{
   text-decoration: none;
 }
 
-/* Enlaces que deben verse como texto normal: heredan el color (negro) y sin
-   subrayado, evitando el azul/subrayado por defecto del navegador para <a>. */
 .enlace-limpio, .enlace-limpio:hover, .enlace-limpio:focus, .enlace-limpio:visited{
   color: inherit;
   text-decoration: none;
 }
 
-/* Campos de formulario a ancho completo, uno por línea. */
 .campo-form{
   display: block;
   width: 100%;
 }
 
-/*Botones que deben ser siempre círculos perfectos (50% sobre caja cuadrada)*/
-#perfil, #borrar_usuario, #ver_contrasena{
+#perfil, #borrar_usuario, #ver_contrasena, #borrar_meta{
   border-radius: 50%;
 }
 
-/*Misma redondez de esquinas que las tarjetas de usuario (rounded-2xl)*/
 #nuevo_usuario{
   border-radius: 1rem;
 }

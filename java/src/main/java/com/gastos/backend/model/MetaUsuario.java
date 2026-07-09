@@ -24,6 +24,10 @@ public class MetaUsuario{
     @Column(nullable = false, length = 1)
     private String completado = "N";
 
+    //Posición en la lista (arrastrable): menor primero
+    @Column(nullable = false)
+    private Integer orden = 0;
+
     public Long getIdMetaUsuario(){
         return idMetaUsuario;
     }
@@ -57,5 +61,12 @@ public class MetaUsuario{
     }
     public void setCompletado(String completado){
         this.completado = completado;
+    }
+
+    public Integer getOrden(){
+        return orden;
+    }
+    public void setOrden(Integer orden){
+        this.orden = orden;
     }
 }

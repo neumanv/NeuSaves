@@ -35,4 +35,20 @@ public class CorreoService{
             log.error("No se pudo enviar el correo de verificación a {}: {}", email, e.getMessage());
         }
     }
+
+    public void enviarNuevaContrasena(String email, String contrasena){
+        log.info("Nueva contraseña para {}: {}", email, contrasena);
+
+        SimpleMailMessage mensaje = new SimpleMailMessage();
+        mensaje.setFrom("no-reply@neusaves.local");
+        mensaje.setTo(email);
+        mensaje.setSubject("Tu nueva contraseña de NeuSaves");
+        mensaje.setText("Hola,\n\nTu nueva contraseña es: " + contrasena
+                + "\n\nÚsala para iniciar sesión. Te recomendamos cambiarla en cuanto entres.\n\nNeuSaves");
+        try{
+            remitente.send(mensaje);
+        }catch (MailException e){
+            log.error("No se pudo enviar la nueva contraseña a {}: {}", email, e.getMessage());
+        }
+    }
 }

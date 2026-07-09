@@ -23,6 +23,7 @@ public class AuthController{
     public record CredencialesLogin(String email, String contrasena){}
     public record PeticionVerificacion(String email, String codigo){}
     public record PeticionReenvio(String email){}
+    public record PeticionCambioContrasena(Long idUsuario, String contrasenaActual, String contrasenaNueva){}
 
     private final UsuarioRepository usuarioRepository;
     private final CorreoService correoService;
@@ -116,8 +117,59 @@ public class AuthController{
         return ResponseEntity.noContent().build();
     }
 
+    //Recuperación de contraseña: si el email existe se genera una nueva y se envía por correo.
+    //Si no existe responde 404 para avisar por pantalla.
+    @PostMapping("/recuperar")
+    public ResponseEntity<Void> recuperarContrasena(@RequestBody PeticionReenvio peticion){
+        String email = peticion.email() == null ? "" : peticion.email().trim();
+
+        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email).orElse(null);
+        if (usuario == null || usuario.getEmail() == null){
+            return ResponseEntity.notFound().build();
+        }
+
+        String nuevaContrasena = generarContrasena();
+        usuario.setContrasena(encoder.encode(nuevaContrasena));
+        usuarioRepository.save(usuario);
+        correoService.enviarNuevaContrasena(usuario.getEmail(), nuevaContrasena);
+        return ResponseEntity.noContent().build();
+    }
+
+    //Cambio de contraseña desde el perfil: la actual debe coincidir con la guardada (401 si no)
+    @PostMapping("/cambiar-contrasena")
+    public ResponseEntity<Void> cambiarContrasena(@RequestBody PeticionCambioContrasena peticion){
+        String nueva = peticion.contrasenaNueva() == null ? "" : peticion.contrasenaNueva();
+        if (peticion.idUsuario() == null || nueva.isBlank() || nueva.length() > 20){
+            return ResponseEntity.badRequest().build();
+        }
+
+        Usuario usuario = usuarioRepository.findById(peticion.idUsuario()).orElse(null);
+        if (usuario == null || usuario.getContrasena() == null){
+            return ResponseEntity.notFound().build();
+        }
+
+        String actual = peticion.contrasenaActual() == null ? "" : peticion.contrasenaActual();
+        if (!encoder.matches(actual, usuario.getContrasena())){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        usuario.setContrasena(encoder.encode(nueva));
+        usuarioRepository.save(usuario);
+        return ResponseEntity.noContent().build();
+    }
+
     //Código de 5 números (puede empezar por cero)
     private String generarCodigo(){
         return String.format("%05d", aleatorio.nextInt(100000));
+    }
+
+    //Contraseña aleatoria de 10 caracteres (letras y números, sin ambiguos)
+    private String generarContrasena(){
+        final String caracteres = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+        StringBuilder sb = new StringBuilder(10);
+        for (int i = 0; i < 10; i++){
+            sb.append(caracteres.charAt(aleatorio.nextInt(caracteres.length())));
+        }
+        return sb.toString();
     }
 }

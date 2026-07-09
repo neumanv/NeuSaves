@@ -1,0 +1,171 @@
+<div class="bg-fondo text-texto font-texto min-h-screen flex flex-col">
+  <app-header [mostrarPerfil]="true" />
+  <main class="flex-1 w-[92%] max-w-2xl mx-auto flex flex-col pt-4 pb-12 px-4">
+    <!-- Botón volver al panel -->
+    <button type="button" (click)="volver()"
+      class="self-start mb-6 inline-flex items-center gap-2 text-sm font-medium transition-transform hover:-translate-x-1 cursor-pointer">
+      <i class="bi bi-arrow-left-circle"></i>
+      Volver
+    </button>
+
+    <h1 class="font-titulos text-3xl font-bold mb-6">Editar perfil</h1>
+
+    <!-- Pestañas -->
+    <div class="flex border-b border-borde mb-6">
+      <button type="button" (click)="cambiarPestana('datos')"
+        class="px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors cursor-pointer"
+        [class.border-verde]="pestana() === 'datos'"
+        [class.text-verde]="pestana() === 'datos'"
+        [class.border-transparent]="pestana() !== 'datos'"
+        [class.text-texto]="pestana() !== 'datos'">
+        Mis datos
+      </button>
+      <button type="button" (click)="cambiarPestana('contrasena')"
+        class="px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors cursor-pointer"
+        [class.border-verde]="pestana() === 'contrasena'"
+        [class.text-verde]="pestana() === 'contrasena'"
+        [class.border-transparent]="pestana() !== 'contrasena'"
+        [class.text-texto]="pestana() !== 'contrasena'">
+        Cambiar contraseña
+      </button>
+    </div>
+
+    @switch (pestana()){
+      <!-- Pestaña 1: todos los datos del usuario -->
+      @case ("datos"){
+        <form (ngSubmit)="guardarDatos()" class="bg-blanco w-full rounded-2xl border border-borde shadow-sm p-6 text-sm">
+          <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+            <div class="col-span-2 font-medium">Email *
+              <div class="mt-1">
+                <input name="email" type="email" [(ngModel)]="datos.email" required maxlength="50" class="block w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton" />
+              </div>
+            </div>
+            <label class="col-span-1 font-medium">Nombre *
+              <input name="nombre" [(ngModel)]="datos.nombre" required maxlength="50" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton" />
+            </label>
+            <label class="col-span-1 font-medium">Primer apellido *
+              <input name="apellido1" [(ngModel)]="datos.apellido1" required maxlength="30" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton" />
+            </label>
+            <label class="col-span-1 font-medium">Segundo apellido
+              <input name="apellido2" [(ngModel)]="datos.apellido2" maxlength="30" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton" />
+            </label>
+            <label class="col-span-1 font-medium">DNI *
+              <input name="dni" [(ngModel)]="datos.dni" required maxlength="9" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm uppercase focus:outline-none focus:border-boton" />
+            </label>
+            <div class="col-span-1 font-medium relative">Prefijo *
+              <button type="button" (click)="togglePrefijo()" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm flex items-center gap-2 text-left cursor-pointer">
+                @if (paisSeleccionado(); as pais){
+                  <span [class]="'fi fi-' + pais.code.toLowerCase()"></span>
+                  <span class="truncate">{{ pais.phoneCode }} {{ pais.name }}</span>
+                }@else{
+                  <span class="text-boton">Selecciona...</span>
+                }
+                <i class="bi bi-chevron-down ml-auto text-[10px]"></i>
+              </button>
+
+              @if (prefijoAbierto()){
+                <div class="fixed inset-0 z-40" (click)="cerrarPrefijo()"></div>
+                <div class="absolute left-0 z-50 mt-1 w-72 max-h-60 overflow-y-auto bg-blanco border border-borde rounded-lg shadow-xl">
+                  <div class="sticky top-0 z-10 bg-blanco p-2 border-b border-borde">
+                    <input type="text" placeholder="Buscar país o prefijo..." [value]="busquedaPrefijo()" (input)="busquedaPrefijo.set($any($event.target).value)" class="w-full bg-fondo border border-borde rounded-md px-2 py-1.5 text-sm focus:outline-none focus:border-boton" />
+                  </div>
+                  @for (p of prefijosFiltrados(); track p.code){
+                    <button type="button" (click)="seleccionarPrefijo(p)"
+                      class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-fondo cursor-pointer">
+                      <span [class]="'fi fi-' + p.code.toLowerCase()"></span>
+                      <span class="truncate">{{ p.phoneCode }} {{ p.name }}</span>
+                    </button>
+                  }@empty{
+                    <p class="px-3 py-2 text-sm text-boton">Sin resultados</p>
+                  }
+                </div>
+              }
+            </div>
+            <label class="col-span-1 font-medium">Teléfono 1 *
+              <input name="telefono1" [(ngModel)]="datos.telefono1" required maxlength="9" inputmode="numeric" (input)="soloNumeros($event, 'telefono1')" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton" />
+            </label>
+            <label class="col-span-1 font-medium">Teléfono 2
+              <input name="telefono2" [(ngModel)]="datos.telefono2" maxlength="9" inputmode="numeric" (input)="soloNumeros($event, 'telefono2')" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton" />
+            </label>
+            <div class="col-span-2 font-medium">
+              Sexo *
+              <div class="mt-1 grid grid-cols-2 gap-3">
+                <button type="button" (click)="elegirSexo('M')"
+                  [class.bg-verde]="sexoElegido() === 'M'"
+                  [class.text-blanco]="sexoElegido() === 'M'"
+                  [class.border-verde]="sexoElegido() === 'M'"
+                  [class.bg-fondo]="sexoElegido() !== 'M'"
+                  [class.text-texto]="sexoElegido() !== 'M'"
+                  [class.border-borde]="sexoElegido() !== 'M'"
+                  class="flex items-center justify-center gap-2 py-2 px-4 rounded-lg border text-sm font-medium transition-colors cursor-pointer">
+                  <i class="bi" [class.bi-check-circle-fill]="sexoElegido() === 'M'" [class.bi-circle]="sexoElegido() !== 'M'"></i>
+                  Hombre
+                </button>
+                <button type="button" (click)="elegirSexo('F')"
+                  [class.bg-verde]="sexoElegido() === 'F'"
+                  [class.text-blanco]="sexoElegido() === 'F'"
+                  [class.border-verde]="sexoElegido() === 'F'"
+                  [class.bg-fondo]="sexoElegido() !== 'F'"
+                  [class.text-texto]="sexoElegido() !== 'F'"
+                  [class.border-borde]="sexoElegido() !== 'F'"
+                  class="flex items-center justify-center gap-2 py-2 px-4 rounded-lg border text-sm font-medium transition-colors cursor-pointer">
+                  <i class="bi" [class.bi-check-circle-fill]="sexoElegido() === 'F'" [class.bi-circle]="sexoElegido() !== 'F'"></i>
+                  Mujer
+                </button>
+              </div>
+            </div>
+          </div>
+
+          @if (errorDatos()){
+            <p class="text-peligro text-sm mt-4 font-semibold">{{ errorDatos() }}</p>
+          }
+          @if (avisoDatos()){
+            <p class="text-verde text-sm mt-4 font-semibold">{{ avisoDatos() }}</p>
+          }
+
+          <button type="submit" [disabled]="guardando()" class="w-full mt-5 py-2.5 px-4 rounded-xl bg-boton text-blanco hover:bg-boton/80 text-sm font-semibold transition-colors disabled:opacity-50 cursor-pointer">
+            {{ guardando() ? "Guardando..." : "Guardar cambios" }}
+          </button>
+        </form>
+      }
+
+      <!-- Pestaña 2: cambiar contraseña -->
+      @case ("contrasena"){
+        <form (ngSubmit)="cambiarContrasena()" class="bg-blanco w-full rounded-2xl border border-borde shadow-sm p-6 text-sm">
+          <div class="font-medium mb-4">Contraseña actual *
+            <div class="relative mt-1">
+              <input name="actual" [type]="verContrasena() ? 'text' : 'password'" [(ngModel)]="contrasenas.actual" required maxlength="20" autocomplete="current-password" class="block w-full bg-fondo border border-borde rounded-lg px-3 py-2 pr-11 text-sm focus:outline-none focus:border-boton" />
+              <button type="button" id="ver_contrasena" (click)="toggleVerContrasena()" [title]="verContrasena() ? 'Ocultar contraseñas' : 'Ver contraseñas'" class="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-texto hover:bg-borde transition-colors cursor-pointer">
+                <i class="bi text-lg" [class.bi-eye-fill]="!verContrasena()" [class.bi-eye-slash-fill]="verContrasena()"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="font-medium mb-4">Contraseña nueva *
+            <div class="mt-1">
+              <input name="nueva" [type]="verContrasena() ? 'text' : 'password'" [(ngModel)]="contrasenas.nueva" required maxlength="20" autocomplete="new-password" class="block w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton" />
+            </div>
+          </div>
+
+          <div class="font-medium mb-4">Repite la contraseña nueva *
+            <div class="mt-1">
+              <input name="repetir" [type]="verContrasena() ? 'text' : 'password'" [(ngModel)]="contrasenas.repetir" required maxlength="20" autocomplete="new-password" class="block w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton" />
+            </div>
+          </div>
+
+          @if (errorContrasena()){
+            <p class="text-peligro text-sm mb-4 font-semibold">{{ errorContrasena() }}</p>
+          }
+          @if (avisoContrasena()){
+            <p class="text-verde text-sm mb-4 font-semibold">{{ avisoContrasena() }}</p>
+          }
+
+          <button type="submit" [disabled]="cambiando()" class="w-full py-2.5 px-4 rounded-xl bg-boton text-blanco hover:bg-boton/80 text-sm font-semibold transition-colors disabled:opacity-50 cursor-pointer">
+            {{ cambiando() ? "Cambiando..." : "Cambiar contraseña" }}
+          </button>
+        </form>
+      }
+    }
+  </main>
+  <app-footer/>
+</div>

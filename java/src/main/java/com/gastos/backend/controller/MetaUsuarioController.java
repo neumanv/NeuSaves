@@ -7,6 +7,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/metas-usuario")
@@ -21,7 +24,7 @@ public class MetaUsuarioController{
 
     @GetMapping
     public List<MetaUsuario> listar(@RequestParam Long usuario){
-        return metaUsuarioRepository.findByIdUsuarioOrderByIdMetaUsuarioDesc(usuario);
+        return metaUsuarioRepository.findByIdUsuarioOrderByOrdenAscIdMetaUsuarioAsc(usuario);
     }
 
     @PostMapping
@@ -38,7 +41,38 @@ public class MetaUsuarioController{
         meta.setTitulo(titulo);
         meta.setDescripcion(descripcion);
         meta.setCompletado("N");
+        //La nueva meta se coloca al final de la lista
+        int siguienteOrden = metaUsuarioRepository.findByIdUsuario(meta.getIdUsuario()).stream()
+                .mapToInt(MetaUsuario::getOrden).max().orElse(0) + 1;
+        meta.setOrden(siguienteOrden);
         return ResponseEntity.status(HttpStatus.CREATED).body(metaUsuarioRepository.save(meta));
+    }
+
+    //Reordena las metas del usuario: recibe los ids en el nuevo orden y actualiza la columna 'orden'
+    @PutMapping("/orden")
+    public ResponseEntity<Void> reordenar(@RequestParam Long usuario, @RequestBody List<Long> idsEnOrden){
+        Map<Long, MetaUsuario> metasPorId = metaUsuarioRepository.findByIdUsuario(usuario).stream()
+                .collect(Collectors.toMap(MetaUsuario::getIdMetaUsuario, Function.identity()));
+
+        for (int i = 0; i < idsEnOrden.size(); i++){
+            //Solo se actualizan las metas que realmente pertenecen al usuario
+            MetaUsuario meta = metasPorId.get(idsEnOrden.get(i));
+            if (meta != null){
+                meta.setOrden(i);
+            }
+        }
+        metaUsuarioRepository.saveAll(metasPorId.values());
+        return ResponseEntity.noContent().build();
+    }
+
+    //Borra una meta por su id
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> borrar(@PathVariable Long id){
+        if (!metaUsuarioRepository.existsById(id)){
+            return ResponseEntity.notFound().build();
+        }
+        metaUsuarioRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/completado")

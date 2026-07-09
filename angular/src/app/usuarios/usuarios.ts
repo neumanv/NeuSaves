@@ -55,6 +55,8 @@ export class Usuarios implements OnInit, AfterViewInit{
   guardando = signal(false);
   errorCrear = signal<string | null>(null);
   nuevoUsuario: NuevoUsuario = this.formularioVacio();
+  //Sexo elegido como signal: sin él (app zoneless) la vista no se re-renderiza al pulsar
+  sexoElegido = signal("M");
 
   constructor(private http: HttpClient, private router: Router, private auth: Auth, private el: ElementRef<HTMLElement>, private renderer: Renderer2, @Inject(PLATFORM_ID) private platformId: Object){}
 
@@ -182,6 +184,7 @@ export class Usuarios implements OnInit, AfterViewInit{
 
   elegirSexo(valor: string): void{
     this.nuevoUsuario.sexo = valor;
+    this.sexoElegido.set(valor);
   }
 
   abrirCrear(): void{
@@ -189,6 +192,7 @@ export class Usuarios implements OnInit, AfterViewInit{
       return;
     }
     this.nuevoUsuario = this.formularioVacio();
+    this.sexoElegido.set(this.nuevoUsuario.sexo);
     this.errorCrear.set(null);
     this.mostrarCrear.set(true);
   }

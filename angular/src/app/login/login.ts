@@ -22,7 +22,7 @@ interface NuevoUsuario{
 }
 
 //Pantallas por las que pasa el inicio de sesión
-type Modo = "login" | "registro" | "verificar";
+type Modo = "login" | "registro" | "verificar" | "recuperar";
 
 @Component({
   selector: "app-login",
@@ -56,7 +56,15 @@ export class Login implements OnInit, AfterViewInit{
   errorVerificar = signal<string | null>(null);
   avisoVerificar = signal<string | null>(null);
 
+  //Recuperación de contraseña
+  emailRecuperar = "";
+  recuperando = signal(false);
+  errorRecuperar = signal<string | null>(null);
+  avisoRecuperar = signal<string | null>(null);
+
   //Desplegable prefijos telefónicos
+  //Sexo elegido en el registro: como signal para que la vista se actualice al pulsar (app zoneless)
+  sexoElegido = signal("M");
   prefijoAbierto = signal(false);
   busquedaPrefijo = signal("");
   paisSeleccionado = signal<Pais | null>(this.paisPorDefecto());
@@ -86,6 +94,7 @@ export class Login implements OnInit, AfterViewInit{
       case "ver-contrasena": this.toggleVerContrasena(); break;
       case "ir-registro": this.irARegistro(); break;
       case "ir-login": this.irALogin(); break;
+      case "ir-recuperar": this.irARecuperar(); break;
       case "toggle-prefijo": this.togglePrefijo(); break;
       case "cerrar-prefijo": this.cerrarPrefijo(); break;
       case "seleccionar-prefijo":{
@@ -112,6 +121,7 @@ export class Login implements OnInit, AfterViewInit{
 
   irARegistro(): void{
     this.nuevoUsuario = this.formularioVacio();
+    this.sexoElegido.set(this.nuevoUsuario.sexo);
     this.paisSeleccionado.set(this.paisPorDefecto());
     this.busquedaPrefijo.set("");
     this.prefijoAbierto.set(false);
@@ -125,6 +135,41 @@ export class Login implements OnInit, AfterViewInit{
     this.verContrasena.set(false);
     this.errorLogin.set(null);
     this.modo.set("login");
+  }
+
+  irARecuperar(): void{
+    this.emailRecuperar = "";
+    this.errorRecuperar.set(null);
+    this.avisoRecuperar.set(null);
+    this.modo.set("recuperar");
+  }
+
+  //Pide una contraseña nueva: si el email existe se envía por correo; si no, se avisa por pantalla
+  recuperarContrasena(): void{
+    const email = this.emailRecuperar.trim();
+    this.errorRecuperar.set(null);
+    this.avisoRecuperar.set(null);
+
+    if (!this.emailValido(email)){
+      this.errorRecuperar.set("Introduce un email válido.");
+      return;
+    }
+
+    this.recuperando.set(true);
+    this.http.post<void>(`${this.apiUrl}/recuperar`,{ email }).subscribe({
+      next: () =>{
+        this.recuperando.set(false);
+        this.avisoRecuperar.set("Te hemos enviado una nueva contraseña a tu correo.");
+      },
+      error: (err: HttpErrorResponse) =>{
+        this.recuperando.set(false);
+        if (err.status === 404){
+          this.errorRecuperar.set("Este correo no está registrado.");
+        }else{
+          this.errorRecuperar.set("No se pudo procesar la solicitud. Inténtalo de nuevo.");
+        }
+      }
+    });
   }
 
   private irAVerificar(email: string, aviso: string): void{
@@ -324,8 +369,10 @@ export class Login implements OnInit, AfterViewInit{
     return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   }
 
+  //El sexo se guarda también en un signal: sin él (app zoneless) la vista no se re-renderiza al pulsar
   elegirSexo(valor: string): void{
     this.nuevoUsuario.sexo = valor;
+    this.sexoElegido.set(valor);
   }
 
   toggleVerContrasena(): void{

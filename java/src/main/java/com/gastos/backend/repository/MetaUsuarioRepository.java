@@ -8,7 +8,6 @@ import java.util.List;
 
 @Repository
 public interface MetaUsuarioRepository extends JpaRepository<MetaUsuario, Long>{
-
-    //Metas de un usuario, las más recientes primero
-    List<MetaUsuario> findByIdUsuarioOrderByIdMetaUsuarioDesc(Long idUsuario);
+    List<MetaUsuario> findByIdUsuarioOrderByOrdenAscIdMetaUsuarioAsc(Long idUsuario);
+    List<MetaUsuario> findByIdUsuario(Long idUsuario);
 }

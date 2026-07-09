@@ -104,25 +104,25 @@
           Sexo *
           <div class="mt-1 grid grid-cols-2 gap-3">
             <button type="button" data-accion="sexo-m"
-              [class.bg-verde]="nuevoUsuario.sexo === 'M'"
-              [class.text-blanco]="nuevoUsuario.sexo === 'M'"
-              [class.border-verde]="nuevoUsuario.sexo === 'M'"
-              [class.bg-fondo]="nuevoUsuario.sexo !== 'M'"
-              [class.text-texto]="nuevoUsuario.sexo !== 'M'"
-              [class.border-borde]="nuevoUsuario.sexo !== 'M'"
+              [class.bg-verde]="sexoElegido() === 'M'"
+              [class.text-blanco]="sexoElegido() === 'M'"
+              [class.border-verde]="sexoElegido() === 'M'"
+              [class.bg-fondo]="sexoElegido() !== 'M'"
+              [class.text-texto]="sexoElegido() !== 'M'"
+              [class.border-borde]="sexoElegido() !== 'M'"
               class="flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border text-[12px] font-medium transition-colors cursor-pointer">
-              <i class="bi" [class.bi-check-circle-fill]="nuevoUsuario.sexo === 'M'" [class.bi-circle]="nuevoUsuario.sexo !== 'M'"></i>
+              <i class="bi" [class.bi-check-circle-fill]="sexoElegido() === 'M'" [class.bi-circle]="sexoElegido() !== 'M'"></i>
               Hombre
             </button>
             <button type="button" data-accion="sexo-f"
-              [class.bg-verde]="nuevoUsuario.sexo === 'F'"
-              [class.text-blanco]="nuevoUsuario.sexo === 'F'"
-              [class.border-verde]="nuevoUsuario.sexo === 'F'"
-              [class.bg-fondo]="nuevoUsuario.sexo !== 'F'"
-              [class.text-texto]="nuevoUsuario.sexo !== 'F'"
-              [class.border-borde]="nuevoUsuario.sexo !== 'F'"
+              [class.bg-verde]="sexoElegido() === 'F'"
+              [class.text-blanco]="sexoElegido() === 'F'"
+              [class.border-verde]="sexoElegido() === 'F'"
+              [class.bg-fondo]="sexoElegido() !== 'F'"
+              [class.text-texto]="sexoElegido() !== 'F'"
+              [class.border-borde]="sexoElegido() !== 'F'"
               class="flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border text-[12px] font-medium transition-colors cursor-pointer">
-              <i class="bi" [class.bi-check-circle-fill]="nuevoUsuario.sexo === 'F'" [class.bi-circle]="nuevoUsuario.sexo !== 'F'"></i>
+              <i class="bi" [class.bi-check-circle-fill]="sexoElegido() === 'F'" [class.bi-circle]="sexoElegido() !== 'F'"></i>
               Mujer
             </button>
           </div>

@@ -36,7 +36,12 @@
             {{ entrando() ? "Entrando..." : "Entrar" }}
           </button>
 
-          <div class="flex items-center gap-3 my-5">
+          <!-- Enlace a la recuperación de contraseña -->
+          <button type="button" data-accion="ir-recuperar" class="block mx-auto mt-2 text-xs text-boton hover:text-texto transition-colors cursor-pointer">
+            Recordar contraseña
+          </button>
+
+          <div class="flex items-center gap-3 my-2">
             <div class="flex-1 h-px bg-borde"></div>
             <span class="text-xs text-boton">¿No tienes cuenta?</span>
             <div class="flex-1 h-px bg-borde"></div>
@@ -122,25 +127,25 @@
               Sexo *
               <div class="mt-1 grid grid-cols-2 gap-3">
                 <button type="button" data-accion="sexo-m"
-                  [class.bg-verde]="nuevoUsuario.sexo === 'M'"
-                  [class.text-blanco]="nuevoUsuario.sexo === 'M'"
-                  [class.border-verde]="nuevoUsuario.sexo === 'M'"
-                  [class.bg-fondo]="nuevoUsuario.sexo !== 'M'"
-                  [class.text-texto]="nuevoUsuario.sexo !== 'M'"
-                  [class.border-borde]="nuevoUsuario.sexo !== 'M'"
+                  [class.bg-verde]="sexoElegido() === 'M'"
+                  [class.text-blanco]="sexoElegido() === 'M'"
+                  [class.border-verde]="sexoElegido() === 'M'"
+                  [class.bg-fondo]="sexoElegido() !== 'M'"
+                  [class.text-texto]="sexoElegido() !== 'M'"
+                  [class.border-borde]="sexoElegido() !== 'M'"
                   class="flex items-center justify-center gap-2 py-2 px-4 rounded-lg border text-[12px] font-medium transition-colors cursor-pointer">
-                  <i class="bi" [class.bi-check-circle-fill]="nuevoUsuario.sexo === 'M'" [class.bi-circle]="nuevoUsuario.sexo !== 'M'"></i>
+                  <i class="bi" [class.bi-check-circle-fill]="sexoElegido() === 'M'" [class.bi-circle]="sexoElegido() !== 'M'"></i>
                   Hombre
                 </button>
                 <button type="button" data-accion="sexo-f"
-                  [class.bg-verde]="nuevoUsuario.sexo === 'F'"
-                  [class.text-blanco]="nuevoUsuario.sexo === 'F'"
-                  [class.border-verde]="nuevoUsuario.sexo === 'F'"
-                  [class.bg-fondo]="nuevoUsuario.sexo !== 'F'"
-                  [class.text-texto]="nuevoUsuario.sexo !== 'F'"
-                  [class.border-borde]="nuevoUsuario.sexo !== 'F'"
+                  [class.bg-verde]="sexoElegido() === 'F'"
+                  [class.text-blanco]="sexoElegido() === 'F'"
+                  [class.border-verde]="sexoElegido() === 'F'"
+                  [class.bg-fondo]="sexoElegido() !== 'F'"
+                  [class.text-texto]="sexoElegido() !== 'F'"
+                  [class.border-borde]="sexoElegido() !== 'F'"
                   class="flex items-center justify-center gap-2 py-2 px-4 rounded-lg border text-[12px] font-medium transition-colors cursor-pointer">
-                  <i class="bi" [class.bi-check-circle-fill]="nuevoUsuario.sexo === 'F'" [class.bi-circle]="nuevoUsuario.sexo !== 'F'"></i>
+                  <i class="bi" [class.bi-check-circle-fill]="sexoElegido() === 'F'" [class.bi-circle]="sexoElegido() !== 'F'"></i>
                   Mujer
                 </button>
               </div>
@@ -189,6 +194,40 @@
           </button>
 
           <button type="button" data-accion="ir-login" class="mt-4 text-xs text-boton hover:text-texto transition-colors cursor-pointer">
+            Volver al inicio de sesión
+          </button>
+        </form>
+      }
+
+      <!-- Recordar contraseña: solo el email; si existe se envía una nueva por correo -->
+      @case ("recuperar"){
+        <form (ngSubmit)="recuperarContrasena()" class="bg-blanco w-full max-w-sm rounded-2xl border border-borde shadow-sm p-8 tarjeta-login">
+          <div class="text-center mb-6">
+            <div class="mx-auto w-16 h-16 bg-fondo rounded-full flex items-center justify-center mb-4 border border-borde">
+              <i class="bi bi-key-fill" style="font-size: 2rem;"></i>
+            </div>
+            <h2 class="font-titulos text-2xl font-bold">Recordar contraseña</h2>
+            <p class="text-xs font-semibold uppercase tracking-widest mt-1">Sistema de Gestión de Gastos</p>
+          </div>
+
+          <div class="text-sm font-medium mb-6">Email
+            <div class="mt-1">
+              <input name="emailRecuperar" type="email" [(ngModel)]="emailRecuperar" required maxlength="50" autocomplete="email" class="block w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton" />
+            </div>
+          </div>
+
+          @if (errorRecuperar()){
+            <p class="text-peligro text-sm mb-4 -mt-2 font-semibold">{{ errorRecuperar() }}</p>
+          }
+          @if (avisoRecuperar()){
+            <p class="text-verde text-sm mb-4 -mt-2 font-semibold">{{ avisoRecuperar() }}</p>
+          }
+
+          <button type="submit" [disabled]="recuperando()" class="w-full py-2.5 px-4 rounded-xl bg-boton text-blanco hover:bg-boton/80 text-sm font-semibold transition-colors disabled:opacity-50 cursor-pointer">
+            {{ recuperando() ? "Enviando..." : "Enviar nueva contraseña" }}
+          </button>
+
+          <button type="button" data-accion="ir-login" class="block mx-auto mt-4 text-xs text-boton hover:text-texto transition-colors cursor-pointer">
             Volver al inicio de sesión
           </button>
         </form>
