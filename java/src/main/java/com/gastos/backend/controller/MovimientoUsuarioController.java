@@ -5,6 +5,8 @@ import com.gastos.backend.model.MovimientoUsuario;
 import com.gastos.backend.repository.MovimientoUsuarioRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -63,6 +65,21 @@ public class MovimientoUsuarioController{
     public List<UltimoMovimiento> ultimos(@RequestParam Long usuario,
                                           @RequestParam(defaultValue = "5") int limite){
         return movimientoUsuarioRepository.ultimosMovimientos(usuario, limite);
+    }
+
+    //Todos los movimientos del usuario paginados (50 por página) para la pantalla "Ver todos"
+    @GetMapping("/pagina")
+    public Map<String, Object> pagina(@RequestParam Long usuario,
+                                      @RequestParam(defaultValue = "0") int pagina,
+                                      @RequestParam(defaultValue = "50") int tamano){
+        Page<UltimoMovimiento> resultado =
+                movimientoUsuarioRepository.movimientosPaginados(usuario, PageRequest.of(pagina, tamano));
+        return Map.of(
+                "contenido", resultado.getContent(),
+                "totalPaginas", resultado.getTotalPages(),
+                "totalElementos", resultado.getTotalElements(),
+                "pagina", resultado.getNumber()
+        );
     }
 
     @PostMapping

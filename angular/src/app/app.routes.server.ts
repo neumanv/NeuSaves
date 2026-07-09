@@ -12,6 +12,10 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Client
   },
   {
+    path: 'movimientos/:token',
+    renderMode: RenderMode.Client
+  },
+  {
     path: 'metas/:token',
     renderMode: RenderMode.Client
   },

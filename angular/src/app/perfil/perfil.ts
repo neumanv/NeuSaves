@@ -1,6 +1,6 @@
 import{ Component, OnInit, Inject, PLATFORM_ID, signal, computed } from "@angular/core";
 import{ HttpClient, HttpErrorResponse } from "@angular/common/http";
-import{ CommonModule, isPlatformBrowser } from "@angular/common";
+import{ CommonModule, isPlatformBrowser, Location } from "@angular/common";
 import{ FormsModule } from "@angular/forms";
 import{ Router } from "@angular/router";
 import{ Header } from "../header/header";
@@ -59,12 +59,13 @@ export class Perfil implements OnInit{
 
   //--- Pestaña de contraseña ---
   contrasenas ={ actual: "", nueva: "", repetir: "" };
-  verContrasena = signal(false);
+  //Cada campo controla por separado si su contraseña se ve o se oculta
+  verContrasena = signal({ actual: false, nueva: false, repetir: false });
   cambiando = signal(false);
   errorContrasena = signal<string | null>(null);
   avisoContrasena = signal<string | null>(null);
 
-  constructor(private http: HttpClient, private router: Router, private auth: Auth, @Inject(PLATFORM_ID) private platformId: Object){}
+  constructor(private http: HttpClient, private router: Router, private auth: Auth, private location: Location, @Inject(PLATFORM_ID) private platformId: Object){}
 
   ngOnInit(): void{
     if (!isPlatformBrowser(this.platformId)){
@@ -95,8 +96,15 @@ export class Perfil implements OnInit{
     this.pestana.set(pestana);
   }
 
+  //Vuelve a la página anterior del historial (de donde se abrió "Editar perfil"),
+  //en vez de una ruta fija. Si no hay historial previo dentro de la app, cae al panel.
   volver(): void{
-    this.router.navigate(["/panel"]);
+    const historial = isPlatformBrowser(this.platformId) ? window.history.length : 0;
+    if (historial > 1){
+      this.location.back();
+    }else{
+      this.router.navigate(["/panel"]);
+    }
   }
 
   //--- Guardar datos (mismas validaciones que la creación de usuario) ---
@@ -229,8 +237,8 @@ export class Perfil implements OnInit{
     this.sexoElegido.set(valor);
   }
 
-  toggleVerContrasena(): void{
-    this.verContrasena.update((visible) => !visible);
+  toggleVerContrasena(campo: "actual" | "nueva" | "repetir"): void{
+    this.verContrasena.update((estado) => ({ ...estado, [campo]: !estado[campo] }));
   }
 
   togglePrefijo(): void{

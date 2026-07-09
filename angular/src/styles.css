@@ -16,6 +16,12 @@
   --font-titulos: "Radio Canada Big", sans-serif;
 }
 
+html{
+  /*Reserva siempre el hueco del scrollbar vertical para que el ancho útil sea idéntico
+    en todas las pantallas (si no, las páginas con scroll estrechan el header respecto a las demás)*/
+  scrollbar-gutter: stable;
+}
+
 body{
   background-color: var(--color-fondo);
   color: var(--color-texto);
@@ -46,5 +52,28 @@ h1, h2, h3, h4, h5, h6{
 }
 
 #nuevo_usuario{
+  border-radius: 1rem;
+}
+
+/*Bootstrap trae reglas sin capa CSS que ganan siempre a las utilidades de margen de Tailwind (van en capa),
+por eso los mensajes de aviso/error de formularios usan estas clases propias en vez de utilidades de Tailwind*/
+.mensaje-form-arriba{
+  margin-top: 1rem;
+  margin-bottom: 0;
+}
+
+.mensaje-form-abajo{
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.boton-form-siguiente{
+  margin-top: 1.25rem;
+}
+
+/*Bootstrap resetea los <button> a border-radius:0 (regla sin capa que gana a rounded-* de Tailwind).
+  Esta clase da a los botones el mismo borde y redondeo que la tarjeta-botón "Metas" (que es un <a> y no sufre ese reset)*/
+.boton-tarjeta{
+  border: 1px solid var(--color-borde);
   border-radius: 1rem;
 }

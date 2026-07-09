@@ -2,6 +2,8 @@ package com.gastos.backend.repository;
 
 import com.gastos.backend.dto.UltimoMovimiento;
 import com.gastos.backend.model.MovimientoUsuario;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -40,4 +42,15 @@ public interface MovimientoUsuarioRepository extends JpaRepository<MovimientoUsu
                    "ORDER BY mu.id_movimiento_usuario DESC " +
                    "LIMIT :limite", nativeQuery = true)
     List<UltimoMovimiento> ultimosMovimientos(@Param("usuario") Long usuario, @Param("limite") int limite);
+
+    //Todos los movimientos del usuario paginados (los más recientes primero), para la pantalla "Ver todos"
+    @Query(value = "SELECT mu.descripcion AS descripcion, m.tipo AS tipo, m.gasto AS gasto, " +
+                   "mu.fecha_movimiento AS fechaMovimiento, mu.cantidad AS cantidad " +
+                   "FROM movimientos_usuarios mu " +
+                   "JOIN movimientos m ON mu.id_movimiento = m.id_movimiento " +
+                   "WHERE mu.id_usuario = :usuario " +
+                   "ORDER BY mu.id_movimiento_usuario DESC",
+           countQuery = "SELECT COUNT(*) FROM movimientos_usuarios mu WHERE mu.id_usuario = :usuario",
+           nativeQuery = true)
+    Page<UltimoMovimiento> movimientosPaginados(@Param("usuario") Long usuario, Pageable pageable);
 }

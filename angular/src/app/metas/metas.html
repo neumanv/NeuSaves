@@ -10,11 +10,14 @@
 
     <div class="flex items-center justify-between mb-8">
       <h1 class="font-titulos text-3xl font-bold">Metas</h1>
-      <button type="button" (click)="abrirModal()"
-        class="flex items-center gap-2 py-2.5 px-4 rounded-xl bg-boton text-blanco hover:bg-boton/80 font-semibold transition-colors cursor-pointer">
-        <i class="bi bi-plus-lg"></i>
-        Nueva meta
-      </button>
+      <!-- El botón desaparece al alcanzar el máximo de metas -->
+      @if (metas().length < MAX_METAS){
+        <button type="button" (click)="abrirModal()"
+          class="flex items-center gap-2 py-2.5 px-4 rounded-xl bg-boton text-blanco hover:bg-boton/80 font-semibold transition-colors cursor-pointer">
+          <i class="bi bi-plus-lg"></i>
+          Nueva meta
+        </button>
+      }
     </div>
 
     <div class="flex flex-col gap-3">

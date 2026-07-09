@@ -25,6 +25,9 @@ interface Meta{
 export class Metas implements OnInit{
   private readonly metasUrl = "http://localhost:8080/api/metas-usuario";
 
+  //Número máximo de metas que puede tener un usuario
+  readonly MAX_METAS = 13;
+
   //Token cifrado del usuario en la URL, reutilizado para volver a su panel
   token = "";
   idUsuario = signal<number | null>(null);
@@ -146,6 +149,10 @@ export class Metas implements OnInit{
   }
 
   abrirModal(): void{
+    //No se abre el modal si ya se alcanzó el máximo de metas
+    if (this.metas().length >= this.MAX_METAS){
+      return;
+    }
     this.nuevaMeta = { titulo: "", descripcion: "" };
     this.errorCrear.set("");
     this.modalAbierto.set(true);
@@ -172,9 +179,13 @@ export class Metas implements OnInit{
         this.guardando.set(false);
         this.modalAbierto.set(false);
       },
-      error: () =>{
+      error: (err) =>{
         this.guardando.set(false);
-        this.errorCrear.set("No se pudo crear la meta. Revisa los datos.");
+        if (err?.status === 409){
+          this.errorCrear.set(`No puedes tener más de ${this.MAX_METAS} metas.`);
+        } else {
+          this.errorCrear.set("No se pudo crear la meta. Revisa los datos.");
+        }
       }
     });
   }

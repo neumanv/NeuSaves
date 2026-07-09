@@ -12,9 +12,11 @@
         @if (menuAbierto()){
           <div class="fixed inset-0 z-40" data-accion="cerrar-menu"></div>
           <div class="absolute right-0 z-50 mt-1 w-44 bg-blanco border border-borde rounded-lg shadow-xl overflow-hidden">
-            <button type="button" data-accion="cerrar-menu" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-texto hover:bg-fondo transition-colors cursor-pointer">
-              Editar perfil
-            </button>
+            @if (mostrarEditarPerfil()){
+              <button type="button" data-accion="editar-perfil" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-texto hover:bg-fondo transition-colors cursor-pointer">
+                Editar perfil
+              </button>
+            }
             @if (mostrarCambiarPerfil()){
               <button type="button" data-accion="cambiar-perfil" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-texto hover:bg-fondo transition-colors cursor-pointer">
                 Cambiar de perfil

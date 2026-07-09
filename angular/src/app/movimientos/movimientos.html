@@ -1,0 +1,82 @@
+<div class="bg-fondo text-texto font-texto min-h-screen flex flex-col">
+  <app-header [mostrarPerfil]="true" />
+  <main class="flex-1 w-[92%] max-w-4xl mx-auto flex flex-col pt-4 pb-12 px-4">
+    <!-- Botón volver al panel del usuario -->
+    <a [routerLink]="['/panel-usuario', token]"
+      class="enlace-limpio self-start mb-8 inline-flex items-center gap-2 text-sm font-medium transition-transform hover:-translate-x-1 cursor-pointer">
+      <i class="bi bi-arrow-left-circle"></i>
+      Volver
+    </a>
+
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="font-titulos text-3xl font-bold">Todos los movimientos</h1>
+      <span class="text-sm text-texto/60">{{ totalElementos() }} en total</span>
+    </div>
+
+    <!-- Tabla con todos los movimientos del usuario -->
+    <div class="bg-blanco border border-borde rounded-2xl shadow-sm overflow-hidden">
+      <table class="w-full text-sm text-left">
+        <thead class="text-texto/60 border-b border-borde">
+          <tr>
+            <th class="px-6 py-3 font-medium">Descripción</th>
+            <th class="px-4 py-3 font-medium">Tipo</th>
+            <th class="px-4 py-3 font-medium">Fecha</th>
+            <th class="px-6 py-3 font-medium text-right">Cantidad</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (m of movimientos(); track $index){
+            <tr class="border-b border-borde/50 last:border-0">
+              <!-- Descripción: sólida hasta 15 caracteres y luego se desvanece -->
+              <td class="px-6 py-3">
+                <span class="block max-w-[17ch] overflow-hidden whitespace-nowrap align-bottom
+                  [mask-image:linear-gradient(to_right,#000_15ch,transparent_17ch)]
+                  [-webkit-mask-image:linear-gradient(to_right,#000_15ch,transparent_17ch)]"
+                  [title]="m.descripcion">{{ m.descripcion }}</span>
+              </td>
+              <!-- Tipo: con su icono, sólido hasta 12 caracteres y luego se desvanece -->
+              <td class="px-4 py-3">
+                <span class="flex items-center gap-2 max-w-[16ch] overflow-hidden whitespace-nowrap align-bottom
+                  [mask-image:linear-gradient(to_right,#000_14ch,transparent_16ch)]
+                  [-webkit-mask-image:linear-gradient(to_right,#000_14ch,transparent_16ch)]"
+                  [title]="m.tipo">
+                  <i class="bi shrink-0" [ngClass]="iconoTipo(m.tipo)"></i>
+                  {{ m.tipo }}
+                </span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">{{ m.fechaMovimiento | date:"dd/MM/yyyy" }}</td>
+              <!-- Cantidad: rojo si es gasto (S), verde si es ingreso (N) -->
+              <td class="px-6 py-3 text-right font-semibold whitespace-nowrap"
+                [class.text-peligro]="m.gasto === 'S'"
+                [class.text-verde]="m.gasto === 'N'">
+                {{ m.gasto === 'S' ? '-' : '+' }}{{ m.cantidad | number:"1.2-2" }} €
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="4" class="px-6 py-10 text-center text-texto/50">No hay movimientos todavía</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación: cada página muestra 50 movimientos -->
+    @if (totalPaginas() > 1){
+      <div class="flex items-center justify-center gap-4 mt-6">
+        <button type="button" (click)="paginaAnterior()" [disabled]="paginaActual() === 0"
+          class="inline-flex items-center gap-2 py-2 px-4 rounded-xl bg-blanco border border-borde font-medium transition-colors hover:bg-fondo disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer">
+          <i class="bi bi-chevron-left"></i>
+          Anterior
+        </button>
+        <span class="text-sm font-medium">Página {{ paginaVisible() }} de {{ totalPaginas() }}</span>
+        <button type="button" (click)="paginaSiguiente()" [disabled]="paginaActual() + 1 >= totalPaginas()"
+          class="inline-flex items-center gap-2 py-2 px-4 rounded-xl bg-blanco border border-borde font-medium transition-colors hover:bg-fondo disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer">
+          Siguiente
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+    }
+  </main>
+  <app-footer/>
+</div>

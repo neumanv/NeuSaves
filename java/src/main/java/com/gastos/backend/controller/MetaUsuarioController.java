@@ -16,6 +16,9 @@ import java.util.stream.Collectors;
 @CrossOrigin(origins = "http://localhost:4200")
 public class MetaUsuarioController{
 
+    //Número máximo de metas que puede tener un usuario
+    private static final long MAX_METAS = 13;
+
     private final MetaUsuarioRepository metaUsuarioRepository;
 
     public MetaUsuarioController(MetaUsuarioRepository metaUsuarioRepository){
@@ -36,6 +39,11 @@ public class MetaUsuarioController{
         if (meta.getIdUsuario() == null || titulo.isEmpty() || titulo.length() > 50
                 || descripcion.isEmpty() || descripcion.length() > 100){
             return ResponseEntity.badRequest().build();
+        }
+
+        //No se permite superar el máximo de metas por usuario
+        if (metaUsuarioRepository.countByIdUsuario(meta.getIdUsuario()) >= MAX_METAS){
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
         meta.setTitulo(titulo);

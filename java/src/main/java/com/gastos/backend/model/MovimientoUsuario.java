@@ -20,7 +20,7 @@ public class MovimientoUsuario{
     @Column(name = "id_movimiento", nullable = false)
     private Long idMovimiento;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String descripcion;
 
     @Column(nullable = false, precision = 12, scale = 2)
@@ -34,6 +34,10 @@ public class MovimientoUsuario{
 
     @Column(name = "fecha_fin_movimiento")
     private LocalDate fechaFinMovimiento;
+
+    //Periodo de repetición si el movimiento es periódico; null si es puntual
+    @Column(name = "id_periodo")
+    private Long idPeriodo;
 
     public Long getIdMovimientoUsuario(){
         return idMovimientoUsuario;
@@ -89,5 +93,12 @@ public class MovimientoUsuario{
     }
     public void setFechaFinMovimiento(LocalDate fechaFinMovimiento){
         this.fechaFinMovimiento = fechaFinMovimiento;
+    }
+
+    public Long getIdPeriodo(){
+        return idPeriodo;
+    }
+    public void setIdPeriodo(Long idPeriodo){
+        this.idPeriodo = idPeriodo;
     }
 }

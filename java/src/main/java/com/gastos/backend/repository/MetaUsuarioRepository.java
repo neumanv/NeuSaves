@@ -10,4 +10,5 @@ import java.util.List;
 public interface MetaUsuarioRepository extends JpaRepository<MetaUsuario, Long>{
     List<MetaUsuario> findByIdUsuarioOrderByOrdenAscIdMetaUsuarioAsc(Long idUsuario);
     List<MetaUsuario> findByIdUsuario(Long idUsuario);
+    long countByIdUsuario(Long idUsuario);
 }

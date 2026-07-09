@@ -1,5 +1,5 @@
 <div class="bg-fondo text-texto font-texto min-h-screen flex flex-col">
-  <app-header [mostrarPerfil]="true" />
+  <app-header [mostrarPerfil]="true" [mostrarEditarPerfil]="false" />
   <main class="flex-1 w-[92%] max-w-2xl mx-auto flex flex-col pt-4 pb-12 px-4">
     <!-- Botón volver al panel -->
     <button type="button" (click)="volver()"
@@ -40,7 +40,7 @@
                 <input name="email" type="email" [(ngModel)]="datos.email" required maxlength="50" class="block w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton" />
               </div>
             </div>
-            <label class="col-span-1 font-medium">Nombre *
+            <label class="col-span-2 font-medium">Nombre *
               <input name="nombre" [(ngModel)]="datos.nombre" required maxlength="50" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton" />
             </label>
             <label class="col-span-1 font-medium">Primer apellido *
@@ -117,13 +117,13 @@
           </div>
 
           @if (errorDatos()){
-            <p class="text-peligro text-sm mt-4 font-semibold">{{ errorDatos() }}</p>
+            <p class="text-peligro text-sm mensaje-form-arriba font-semibold">{{ errorDatos() }}</p>
           }
           @if (avisoDatos()){
-            <p class="text-verde text-sm mt-4 font-semibold">{{ avisoDatos() }}</p>
+            <p class="text-verde text-sm mensaje-form-arriba font-semibold">{{ avisoDatos() }}</p>
           }
 
-          <button type="submit" [disabled]="guardando()" class="w-full mt-5 py-2.5 px-4 rounded-xl bg-boton text-blanco hover:bg-boton/80 text-sm font-semibold transition-colors disabled:opacity-50 cursor-pointer">
+          <button type="submit" [disabled]="guardando()" class="w-full boton-form-siguiente py-2.5 px-4 rounded-xl bg-boton text-blanco hover:bg-boton/80 text-sm font-semibold transition-colors disabled:opacity-50 cursor-pointer">
             {{ guardando() ? "Guardando..." : "Guardar cambios" }}
           </button>
         </form>
@@ -134,30 +134,36 @@
         <form (ngSubmit)="cambiarContrasena()" class="bg-blanco w-full rounded-2xl border border-borde shadow-sm p-6 text-sm">
           <div class="font-medium mb-4">Contraseña actual *
             <div class="relative mt-1">
-              <input name="actual" [type]="verContrasena() ? 'text' : 'password'" [(ngModel)]="contrasenas.actual" required maxlength="20" autocomplete="current-password" class="block w-full bg-fondo border border-borde rounded-lg px-3 py-2 pr-11 text-sm focus:outline-none focus:border-boton" />
-              <button type="button" id="ver_contrasena" (click)="toggleVerContrasena()" [title]="verContrasena() ? 'Ocultar contraseñas' : 'Ver contraseñas'" class="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-texto hover:bg-borde transition-colors cursor-pointer">
-                <i class="bi text-lg" [class.bi-eye-fill]="!verContrasena()" [class.bi-eye-slash-fill]="verContrasena()"></i>
+              <input name="actual" [type]="verContrasena().actual ? 'text' : 'password'" [(ngModel)]="contrasenas.actual" required maxlength="20" autocomplete="current-password" class="block w-full bg-fondo border border-borde rounded-lg px-3 py-2 pr-11 text-sm focus:outline-none focus:border-boton" />
+              <button type="button" (click)="toggleVerContrasena('actual')" [title]="verContrasena().actual ? 'Ocultar contraseña' : 'Ver contraseña'" class="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-texto hover:bg-borde transition-colors cursor-pointer">
+                <i class="bi text-lg" [class.bi-eye-fill]="!verContrasena().actual" [class.bi-eye-slash-fill]="verContrasena().actual"></i>
               </button>
             </div>
           </div>
 
           <div class="font-medium mb-4">Contraseña nueva *
-            <div class="mt-1">
-              <input name="nueva" [type]="verContrasena() ? 'text' : 'password'" [(ngModel)]="contrasenas.nueva" required maxlength="20" autocomplete="new-password" class="block w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton" />
+            <div class="relative mt-1">
+              <input name="nueva" [type]="verContrasena().nueva ? 'text' : 'password'" [(ngModel)]="contrasenas.nueva" required maxlength="20" autocomplete="new-password" class="block w-full bg-fondo border border-borde rounded-lg px-3 py-2 pr-11 text-sm focus:outline-none focus:border-boton" />
+              <button type="button" (click)="toggleVerContrasena('nueva')" [title]="verContrasena().nueva ? 'Ocultar contraseña' : 'Ver contraseña'" class="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-texto hover:bg-borde transition-colors cursor-pointer">
+                <i class="bi text-lg" [class.bi-eye-fill]="!verContrasena().nueva" [class.bi-eye-slash-fill]="verContrasena().nueva"></i>
+              </button>
             </div>
           </div>
 
           <div class="font-medium mb-4">Repite la contraseña nueva *
-            <div class="mt-1">
-              <input name="repetir" [type]="verContrasena() ? 'text' : 'password'" [(ngModel)]="contrasenas.repetir" required maxlength="20" autocomplete="new-password" class="block w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton" />
+            <div class="relative mt-1">
+              <input name="repetir" [type]="verContrasena().repetir ? 'text' : 'password'" [(ngModel)]="contrasenas.repetir" required maxlength="20" autocomplete="new-password" class="block w-full bg-fondo border border-borde rounded-lg px-3 py-2 pr-11 text-sm focus:outline-none focus:border-boton" />
+              <button type="button" (click)="toggleVerContrasena('repetir')" [title]="verContrasena().repetir ? 'Ocultar contraseña' : 'Ver contraseña'" class="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-texto hover:bg-borde transition-colors cursor-pointer">
+                <i class="bi text-lg" [class.bi-eye-fill]="!verContrasena().repetir" [class.bi-eye-slash-fill]="verContrasena().repetir"></i>
+              </button>
             </div>
           </div>
 
           @if (errorContrasena()){
-            <p class="text-peligro text-sm mb-4 font-semibold">{{ errorContrasena() }}</p>
+            <p class="text-peligro text-sm mensaje-form-abajo font-semibold">{{ errorContrasena() }}</p>
           }
           @if (avisoContrasena()){
-            <p class="text-verde text-sm mb-4 font-semibold">{{ avisoContrasena() }}</p>
+            <p class="text-verde text-sm mensaje-form-abajo font-semibold">{{ avisoContrasena() }}</p>
           }
 
           <button type="submit" [disabled]="cambiando()" class="w-full py-2.5 px-4 rounded-xl bg-boton text-blanco hover:bg-boton/80 text-sm font-semibold transition-colors disabled:opacity-50 cursor-pointer">

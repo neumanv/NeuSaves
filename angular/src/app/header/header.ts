@@ -9,6 +9,7 @@ import { Auth } from "../auth";
 })
 export class Header implements AfterViewInit {
   mostrarPerfil = input(false);
+  mostrarEditarPerfil = input(true);
   mostrarCambiarPerfil = input(true);
   menuAbierto = signal(false);
   confirmarSalir = signal(false);
@@ -27,6 +28,7 @@ export class Header implements AfterViewInit {
     switch (objetivo.dataset["accion"]){
       case "abrir-menu": this.toggleMenu(); break;
       case "cerrar-menu": this.cerrarMenu(); break;
+      case "editar-perfil": this.editarPerfil(); break;
       case "cambiar-perfil": this.cambiarPerfil(); break;
       case "pedir-salir": this.pedirCerrarSesion(); break;
       case "cancelar-salir": this.cancelarCerrarSesion(); break;
@@ -40,6 +42,11 @@ export class Header implements AfterViewInit {
 
   cerrarMenu(): void{
     this.menuAbierto.set(false);
+  }
+
+  editarPerfil(): void{
+    this.menuAbierto.set(false);
+    this.router.navigate(["/perfil"]);
   }
 
   cambiarPerfil(): void{

@@ -57,7 +57,8 @@
       <div class="w-full lg:w-1/2 bg-blanco border border-borde rounded-2xl shadow-sm overflow-hidden">
         <div class="flex items-center justify-between px-6 py-4 border-b border-borde">
           <h2 class="font-titulos text-lg font-bold">Últimos movimientos</h2>
-          <a class="text-sm font-medium text-verde hover:underline cursor-pointer">Ver todos</a>
+          <a [routerLink]="['/movimientos', token]"
+            class="text-sm font-medium text-blue-600 underline cursor-pointer">Ver todos</a>
         </div>
 
         <table class="w-full text-sm text-left">
@@ -72,14 +73,20 @@
           <tbody>
             @for (m of ultimosMovimientos(); track $index){
               <tr class="border-b border-borde/50 last:border-0">
-                <!-- Descripción: sólida hasta 20 caracteres y luego se desvanece -->
+                <!-- Descripción: sólida hasta 15 caracteres y luego se desvanece -->
                 <td class="px-6 py-3">
-                  <span class="block max-w-[22ch] overflow-hidden whitespace-nowrap align-bottom
-                    [mask-image:linear-gradient(to_right,#000_20ch,transparent_22ch)]
-                    [-webkit-mask-image:linear-gradient(to_right,#000_20ch,transparent_22ch)]"
+                  <span class="block max-w-[17ch] overflow-hidden whitespace-nowrap align-bottom
+                    [mask-image:linear-gradient(to_right,#000_15ch,transparent_17ch)]
+                    [-webkit-mask-image:linear-gradient(to_right,#000_15ch,transparent_17ch)]"
                     [title]="m.descripcion">{{ m.descripcion }}</span>
                 </td>
-                <td class="px-4 py-3">{{ m.tipo }}</td>
+                <!-- Tipo: sólido hasta 12 caracteres y luego se desvanece -->
+                <td class="px-4 py-3">
+                  <span class="block max-w-[14ch] overflow-hidden whitespace-nowrap align-bottom
+                    [mask-image:linear-gradient(to_right,#000_12ch,transparent_14ch)]
+                    [-webkit-mask-image:linear-gradient(to_right,#000_12ch,transparent_14ch)]"
+                    [title]="m.tipo">{{ m.tipo }}</span>
+                </td>
                 <td class="px-4 py-3">{{ m.fechaMovimiento | date:"dd/MM/yyyy" }}</td>
                 <!-- Cantidad: rojo si es gasto (S), verde si es ingreso (N) -->
                 <td class="px-6 py-3 text-right font-semibold whitespace-nowrap"
@@ -156,17 +163,186 @@
       </div>
       </div>
 
-      <!-- Tarjeta-botón "Metas": debajo de la tabla, pequeña, texto e icono azules y sin subrayado -->
-      <a [routerLink]="['/metas', token]"
-        class="enlace-limpio w-full lg:w-1/2 bg-blanco border border-borde rounded-2xl shadow-sm px-4 py-3 flex items-center justify-between transition-colors hover:bg-fondo/40 cursor-pointer">
-        <span class="flex items-center gap-2 text-texto">
-          <i class="bi bi-flag-fill"></i>
-          <span class="font-titulos text-base font-bold">Metas</span>
-        </span>
-        <i class="bi bi-chevron-right text-texto"></i>
-      </a>
+      <!-- Fila inferior: acciones de movimientos a la izquierda, botón Metas a la derecha -->
+      <div class="flex flex-col lg:flex-row gap-6 items-stretch">
+        <!-- Botones para añadir ingreso o gasto, debajo de la tabla de últimos movimientos -->
+        <div class="w-full lg:w-1/2 flex gap-4">
+          <button type="button" (click)="abrirModalMovimiento('N')"
+            class="boton-tarjeta flex-1 bg-verde text-blanco shadow-sm px-4 py-3 flex items-center justify-center gap-2 font-titulos text-base font-bold transition-colors hover:bg-verde/80 cursor-pointer">
+            <i class="bi bi-plus-circle-fill"></i>
+            Añadir ingreso
+          </button>
+          <button type="button" (click)="abrirModalMovimiento('S')"
+            class="boton-tarjeta flex-1 bg-peligro text-blanco shadow-sm px-4 py-3 flex items-center justify-center gap-2 font-titulos text-base font-bold transition-colors hover:bg-peligro/80 cursor-pointer">
+            <i class="bi bi-dash-circle-fill"></i>
+            Añadir gasto
+          </button>
+        </div>
+
+        <!-- Tarjeta-botón "Metas": movida a la derecha, bajo las estadísticas -->
+        <a [routerLink]="['/metas', token]"
+          class="enlace-limpio w-full lg:w-1/2 bg-blanco border border-borde rounded-2xl shadow-sm px-4 py-3 flex items-center justify-between transition-colors hover:bg-fondo/40 cursor-pointer">
+          <span class="flex items-center gap-2 text-texto">
+            <i class="bi bi-flag-fill"></i>
+            <span class="font-titulos text-base font-bold">Metas</span>
+          </span>
+          <i class="bi bi-chevron-right text-texto"></i>
+        </a>
+      </div>
       </div>
     }
   </main>
+
+  <!-- Modal "Añadir ingreso" / "Añadir gasto": verde para ingresos, rojo para gastos -->
+  @if (modalMovimiento()){
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-texto/30 backdrop-blur-sm" (click)="cerrarModalMovimiento()">
+      <div class="relative bg-blanco text-texto font-texto w-full max-w-md rounded-2xl shadow-xl p-6"
+        [style.border]="esGasto() ? '3px solid var(--color-peligro)' : '3px solid var(--color-verde)'"
+        (click)="$event.stopPropagation()">
+        <div class="flex items-baseline gap-1 mb-3">
+          <span class="inline-flex items-center justify-center rounded-full border shrink-0"
+            [ngClass]="esGasto() ? 'border-peligro text-peligro' : 'border-verde text-verde'"
+            style="width: 1.75rem; height: 1.75rem;">
+            <i class="bi" [ngClass]="esGasto() ? 'bi-dash-circle-fill' : 'bi-plus-circle-fill'" style="font-size: 1.6rem; line-height: 1;"></i>
+          </span>
+          <h3 class="font-titulos text-lg font-bold leading-none">{{ esGasto() ? "Añadir gasto" : "Añadir ingreso" }}</h3>
+        </div>
+
+        <!-- Desplegable de tipo de movimiento, cada uno con su icono -->
+        <label class="block text-sm font-medium mb-1">Tipo de {{ esGasto() ? "gasto" : "ingreso" }} *</label>
+        <div class="relative mb-4">
+          <button type="button" (click)="toggleTipo()"
+            class="w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm flex items-center gap-2 text-left cursor-pointer">
+            @if (tipoSel(); as t){
+              <i class="bi" [ngClass]="iconoTipo(t.tipo)"></i>
+              <span class="truncate">{{ t.tipo }}</span>
+            }@else{
+              <span class="text-boton">Selecciona...</span>
+            }
+            <i class="bi bi-chevron-down ml-auto text-[10px]"></i>
+          </button>
+
+          @if (tipoAbierto()){
+            <div class="fixed inset-0 z-40" (click)="cerrarTipo()"></div>
+            <div class="absolute left-0 right-0 z-50 mt-1 bg-blanco border border-borde rounded-lg shadow-xl overflow-hidden max-h-56 overflow-y-auto">
+              @for (t of tiposModal(); track t.idMovimiento){
+                <button type="button" (click)="seleccionarTipo(t)"
+                  class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-fondo cursor-pointer">
+                  <i class="bi" [ngClass]="iconoTipo(t.tipo)"></i>
+                  <span class="truncate">{{ t.tipo }}</span>
+                </button>
+              }@empty{
+                <p class="px-3 py-2 text-sm text-boton">No hay tipos disponibles</p>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Descripción -->
+        <label class="block text-sm font-medium mb-1">Descripción *</label>
+        <textarea name="descripcionMovimiento" [(ngModel)]="nuevoMovimiento.descripcion" (input)="limitarDescripcion($event)" rows="2" maxlength="100"
+          class="w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm mb-4 resize-none focus:outline-none focus:border-boton"></textarea>
+
+        <!-- Cantidad (máximo 999.999,99 €) + check de movimiento periódico -->
+        <div class="flex items-end gap-4">
+          <div class="flex-1">
+            <label class="block text-sm font-medium mb-1">Cantidad (€) *</label>
+            <input name="cantidadMovimiento" type="text" inputmode="decimal" placeholder="0.00" [(ngModel)]="nuevoMovimiento.cantidad"
+              (input)="limitarCantidad($event)" min="0" max="999999.99"
+              class="w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton" />
+          </div>
+          <label class="flex items-center gap-2 text-sm font-medium whitespace-nowrap cursor-pointer select-none py-2">
+            <input type="checkbox" [checked]="esPeriodico()" (change)="togglePeriodico()"
+              class="w-4 h-4 cursor-pointer" [ngClass]="esGasto() ? 'accent-peligro' : 'accent-verde'" />
+            Periódico
+          </label>
+        </div>
+
+        <!-- Si es periódico: periodo de repetición y fecha fin -->
+        @if (esPeriodico()){
+          <div class="flex gap-4 mt-4">
+            <div class="flex-1 relative">
+              <label class="block text-sm font-medium mb-1">Periodo *</label>
+              <button type="button" (click)="togglePeriodo()"
+                class="w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm flex items-center gap-2 text-left cursor-pointer">
+                @if (periodoSel(); as p){
+                  <span class="truncate">{{ p.periodo }}</span>
+                }@else{
+                  <span class="text-boton">Selecciona...</span>
+                }
+                <i class="bi bi-chevron-down ml-auto text-[10px]"></i>
+              </button>
+
+              @if (periodoAbierto()){
+                <div class="fixed inset-0 z-40" (click)="cerrarPeriodo()"></div>
+                <div class="absolute left-0 right-0 z-50 mt-1 bg-blanco border border-borde rounded-lg shadow-xl overflow-hidden">
+                  @for (p of periodos(); track p.idPeriodo){
+                    <button type="button" (click)="seleccionarPeriodo(p)"
+                      class="w-full px-3 py-2 text-sm text-left hover:bg-fondo cursor-pointer">{{ p.periodo }}</button>
+                  }@empty{
+                    <p class="px-3 py-2 text-sm text-boton">No hay periodos disponibles</p>
+                  }
+                </div>
+              }
+            </div>
+            <div class="flex-1">
+              <label class="block text-sm font-medium mb-1">Fecha fin *</label>
+              <input name="fechaFinMovimiento" type="date" [(ngModel)]="nuevoMovimiento.fechaFin" [min]="manana"
+                class="w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton cursor-pointer" />
+            </div>
+          </div>
+        }
+
+        @if (errorMovimiento()){
+          <p class="text-peligro text-sm mensaje-form-arriba font-semibold">{{ errorMovimiento() }}</p>
+        }
+
+        <div class="flex gap-3 mt-6">
+          <button type="button" (click)="cerrarModalMovimiento()"
+            class="flex-1 py-2.5 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde font-medium transition-colors cursor-pointer">Cancelar</button>
+          <button type="button" (click)="guardarMovimiento()"
+            class="flex-1 py-2.5 px-4 rounded-xl text-blanco font-semibold transition-colors cursor-pointer"
+            [ngClass]="esGasto() ? 'bg-peligro hover:bg-peligro/80' : 'bg-verde hover:bg-verde/80'">
+            Añadir
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Confirmación previa al guardado: el movimiento no se puede borrar después -->
+  @if (confirmacionMovimiento()){
+    <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-texto/30 backdrop-blur-sm" (click)="cerrarConfirmacionMovimiento()">
+      <div class="relative bg-blanco text-texto font-texto w-full max-w-sm rounded-2xl shadow-xl p-6"
+        [style.border]="esGasto() ? '3px solid var(--color-peligro)' : '3px solid var(--color-verde)'"
+        (click)="$event.stopPropagation()">
+        <div class="flex items-baseline gap-1 mb-3">
+          <span class="inline-flex items-center justify-center rounded-full border shrink-0"
+            [ngClass]="esGasto() ? 'border-peligro text-peligro' : 'border-verde text-verde'"
+            style="width: 1.75rem; height: 1.75rem;">
+            <i class="bi bi-exclamation-triangle-fill" style="font-size: 1.3rem; line-height: 1;"></i>
+          </span>
+          <h3 class="font-titulos text-lg font-bold leading-none">Confirmar {{ esGasto() ? "gasto" : "ingreso" }}</h3>
+        </div>
+
+        <p class="text-sm">¿Seguro que quieres guardar este {{ esGasto() ? "gasto" : "ingreso" }}? Una vez guardado no se puede borrar.</p>
+
+        @if (esPeriodico()){
+          <p class="text-sm mt-3">Este {{ esGasto() ? "gasto" : "ingreso" }} es periódico. Para modificarlo más adelante deberás hacerlo desde tu perfil.</p>
+        }
+
+        <div class="flex gap-3 mt-6">
+          <button type="button" (click)="cerrarConfirmacionMovimiento()"
+            class="flex-1 py-2.5 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde font-medium transition-colors cursor-pointer">Cancelar</button>
+          <button type="button" (click)="confirmarGuardarMovimiento()" [disabled]="guardandoMovimiento()"
+            class="flex-1 py-2.5 px-4 rounded-xl text-blanco font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+            [ngClass]="esGasto() ? 'bg-peligro hover:bg-peligro/80' : 'bg-verde hover:bg-verde/80'">
+            {{ guardandoMovimiento() ? "Guardando..." : "Confirmar" }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
   <app-footer/>
 </div>
