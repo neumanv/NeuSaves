@@ -117,17 +117,6 @@ export class UsuarioDetalle implements OnInit{
     return this.iconosTipo[tipo] ?? "bi-cash-coin";
   }
 
-  saldoNivel = computed<"bajo" | "medio" | "alto">(() =>{
-    const saldo = this.saldo();
-    if (saldo < 300){
-      return "bajo";
-    }
-    if (saldo > 1000){
-      return "alto";
-    }
-    return "medio";
-  });
-
   ingresosTexto = computed(() => this.ingresosMes().toFixed(2));
   gastosTexto = computed(() => this.gastosMes().toFixed(2));
 
@@ -376,6 +365,18 @@ export class UsuarioDetalle implements OnInit{
     this.payloadPendiente = null;
   }
 
+  //Texto para la confirmación: cuándo se cobrará/ingresará el movimiento periódico por defecto
+  textoCobroPeriodico(): string{
+    switch (this.periodoSel()?.periodo){
+      case "Diario": return "cada día";
+      case "Semanal": return "cada lunes (primer día de la semana)";
+      case "Mensual": return "el día 1 de cada mes";
+      case "2 meses": return "el día 1 cada 2 meses";
+      case "Anual": return "cada 1 de enero (primer día del año)";
+      default: return "";
+    }
+  }
+
   confirmarGuardarMovimiento(): void{
     const id = this.idActual();
     const nombre = this.esGasto() ? "gasto" : "ingreso";
@@ -396,7 +397,12 @@ export class UsuarioDetalle implements OnInit{
       error: (err) =>{
         this.guardandoMovimiento.set(false);
         this.confirmacionMovimiento.set(false);
-        this.errorMovimiento.set(`No se pudo añadir el ${nombre}. Inténtalo de nuevo.`);
+        //409: el usuario ya tiene el máximo de movimientos periódicos
+        if (err.status === 409){
+          this.errorMovimiento.set("Ya tienes 10 movimientos periódicos (el máximo). Elimina alguno desde tu perfil para añadir otro.");
+        }else{
+          this.errorMovimiento.set(`No se pudo añadir el ${nombre}. Inténtalo de nuevo.`);
+        }
         console.error(`Error al añadir el ${nombre}:`, err);
       }
     });

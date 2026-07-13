@@ -21,7 +21,27 @@ interface DatosPerfil{
   sexo: string;
 }
 
-type Pestana = "datos" | "contrasena";
+//Movimiento periódico del usuario (plantilla) para la pestaña "Mov. periódicos"
+interface MovimientoPeriodico{
+  idMovimientoUsuario: number;
+  descripcion: string;
+  tipo: string;
+  gasto: string;
+  cantidad: number;
+  idPeriodo: number;
+  periodo: string;
+  diaCobro: number | null;
+  mesCobro: number | null;
+  fechaFinMovimiento: string;
+}
+
+//Periodo de repetición del catálogo (Diario, Semanal, ...) para el desplegable del modal
+interface Periodo{
+  idPeriodo: number;
+  periodo: string;
+}
+
+type Pestana = "datos" | "contrasena" | "periodicos";
 
 @Component({
   selector: "app-perfil",
@@ -32,7 +52,15 @@ type Pestana = "datos" | "contrasena";
 export class Perfil implements OnInit{
   private readonly usuariosUrl = "http://localhost:8080/api/usuarios";
   private readonly authUrl = "http://localhost:8080/api/auth";
+  private readonly movimientosUrl = "http://localhost:8080/api/movimientos-usuarios";
+  private readonly periodosUrl = "http://localhost:8080/api/periodos";
   readonly prefijos = PREFIJOS;
+
+  //Nombres para los desplegables del día de cobro de los movimientos periódicos
+  readonly diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+  readonly meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+  //Días máximos de cada mes (febrero con 29 para permitir los bisiestos)
+  private readonly diasPorMes = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
   pestana = signal<Pestana>("datos");
 
@@ -56,6 +84,26 @@ export class Perfil implements OnInit{
       (p) => this.normaliza(p.name).includes(q) || p.phoneCode.includes(q)
     );
   });
+
+  //--- Pestaña de movimientos periódicos ---
+  periodicos = signal<MovimientoPeriodico[]>([]);
+  cargandoPeriodicos = signal(false);
+  errorPeriodicos = signal<string | null>(null);
+  //Catálogo de periodos para el desplegable de periodicidad del modal
+  periodos = signal<Periodo[]>([]);
+
+  //Modal de edición de la periodicidad y el día de cobro (abierto si hay un movimiento seleccionado)
+  editandoPeriodico = signal<MovimientoPeriodico | null>(null);
+  periodoEdit = "";
+  diaCobroEdit = 1;
+  mesCobroEdit = 1;
+  guardandoPeriodico = signal(false);
+  errorDiaCobro = signal<string | null>(null);
+
+  //Modal de confirmación para eliminar un movimiento periódico
+  eliminandoPeriodico = signal<MovimientoPeriodico | null>(null);
+  borrandoPeriodico = signal(false);
+  errorEliminar = signal<string | null>(null);
 
   //--- Pestaña de contraseña ---
   contrasenas ={ actual: "", nueva: "", repetir: "" };
@@ -90,10 +138,147 @@ export class Perfil implements OnInit{
     };
     this.sexoElegido.set(this.datos.sexo);
     this.paisSeleccionado.set(this.prefijos.find((p) => p.phoneCode === this.datos.prefijo) ?? null);
+    this.cargarPeriodicos();
+
+    //Catálogo de periodos para el desplegable de periodicidad
+    this.http.get<Periodo[]>(this.periodosUrl).subscribe({
+      next: (periodos) => this.periodos.set(periodos ?? []),
+      error: (err) => console.error("Error al cargar los periodos:", err)
+    });
   }
 
   cambiarPestana(pestana: Pestana): void{
     this.pestana.set(pestana);
+  }
+
+  //--- Movimientos periódicos ---
+  private cargarPeriodicos(): void{
+    const usuario = this.auth.usuario();
+    if (!usuario){
+      return;
+    }
+    this.cargandoPeriodicos.set(true);
+    this.errorPeriodicos.set(null);
+    this.http.get<MovimientoPeriodico[]>(`${this.movimientosUrl}/periodicos?usuario=${usuario.idUsuario}`).subscribe({
+      next: (movimientos) =>{
+        this.cargandoPeriodicos.set(false);
+        this.periodicos.set(movimientos ?? []);
+      },
+      error: (err) =>{
+        this.cargandoPeriodicos.set(false);
+        this.errorPeriodicos.set("No se pudieron cargar los movimientos periódicos.");
+        console.error("Error al cargar los movimientos periódicos:", err);
+      }
+    });
+  }
+
+  //Texto descriptivo de cuándo se cobra/ingresa cada movimiento periódico
+  textoCobro(m: MovimientoPeriodico): string{
+    const verbo = m.gasto === "S" ? "Se cobra" : "Se ingresa";
+    const dia = m.diaCobro ?? 1;
+    switch (m.periodo){
+      case "Diario": return `${verbo} cada día`;
+      case "Semanal": return `${verbo} cada ${this.diasSemana[dia - 1].toLowerCase()}`;
+      case "Mensual": return `${verbo} el día ${dia} de cada mes`;
+      case "2 meses": return `${verbo} el día ${dia} cada 2 meses`;
+      case "Anual": return `${verbo} cada ${dia} de ${this.meses[(m.mesCobro ?? 1) - 1].toLowerCase()}`;
+      default: return verbo;
+    }
+  }
+
+  //Días seleccionables en el modal según la periodicidad elegida (y el mes si es anual).
+  //En mensual/2 meses el máximo es el 30 porque no todos los meses tienen día 31.
+  get diasEditables(): number[]{
+    const tope = this.periodoEdit === "Anual" ? this.diasPorMes[this.mesCobroEdit - 1] : 30;
+    return Array.from({ length: tope }, (_, i) => i + 1);
+  }
+
+  abrirEditarPeriodico(m: MovimientoPeriodico): void{
+    this.periodoEdit = m.periodo;
+    this.diaCobroEdit = m.diaCobro ?? 1;
+    this.mesCobroEdit = m.mesCobro ?? 1;
+    this.errorDiaCobro.set(null);
+    this.editandoPeriodico.set(m);
+  }
+
+  cerrarEditarPeriodico(): void{
+    this.editandoPeriodico.set(null);
+  }
+
+  //Al cambiar la periodicidad se ajusta el día para que quepa en la nueva escala
+  cambioPeriodoEdit(): void{
+    if (this.periodoEdit === "Semanal" && this.diaCobroEdit > 7){
+      this.diaCobroEdit = 1;
+    }
+    this.ajustarDiaCobro();
+  }
+
+  //Ajusta el día si el tope de la periodicidad o del mes elegido es menor
+  ajustarDiaCobro(): void{
+    const tope = this.periodoEdit === "Anual" ? this.diasPorMes[this.mesCobroEdit - 1] : 30;
+    if (this.diaCobroEdit > tope){
+      this.diaCobroEdit = tope;
+    }
+  }
+
+  guardarPeriodico(): void{
+    const usuario = this.auth.usuario();
+    const m = this.editandoPeriodico();
+    const periodo = this.periodos().find((p) => p.periodo === this.periodoEdit);
+    if (!usuario || !m || !periodo){
+      return;
+    }
+    this.guardandoPeriodico.set(true);
+    this.errorDiaCobro.set(null);
+    this.http.put(`${this.movimientosUrl}/periodicos/${m.idMovimientoUsuario}`,{
+      idUsuario: usuario.idUsuario,
+      idPeriodo: periodo.idPeriodo,
+      diaCobro: this.periodoEdit === "Diario" ? null : this.diaCobroEdit,
+      mesCobro: this.periodoEdit === "Anual" ? this.mesCobroEdit : null
+    }).subscribe({
+      next: () =>{
+        this.guardandoPeriodico.set(false);
+        this.editandoPeriodico.set(null);
+        this.cargarPeriodicos();
+      },
+      error: (err) =>{
+        this.guardandoPeriodico.set(false);
+        this.errorDiaCobro.set("No se pudo guardar el cambio. Inténtalo de nuevo.");
+        console.error("Error al guardar el movimiento periódico:", err);
+      }
+    });
+  }
+
+  //--- Eliminar un movimiento periódico ---
+  abrirEliminarPeriodico(m: MovimientoPeriodico): void{
+    this.errorEliminar.set(null);
+    this.eliminandoPeriodico.set(m);
+  }
+
+  cerrarEliminarPeriodico(): void{
+    this.eliminandoPeriodico.set(null);
+  }
+
+  eliminarPeriodico(): void{
+    const usuario = this.auth.usuario();
+    const m = this.eliminandoPeriodico();
+    if (!usuario || !m){
+      return;
+    }
+    this.borrandoPeriodico.set(true);
+    this.errorEliminar.set(null);
+    this.http.delete(`${this.movimientosUrl}/periodicos/${m.idMovimientoUsuario}?usuario=${usuario.idUsuario}`).subscribe({
+      next: () =>{
+        this.borrandoPeriodico.set(false);
+        this.eliminandoPeriodico.set(null);
+        this.cargarPeriodicos();
+      },
+      error: (err) =>{
+        this.borrandoPeriodico.set(false);
+        this.errorEliminar.set("No se pudo eliminar el movimiento. Inténtalo de nuevo.");
+        console.error("Error al eliminar el movimiento periódico:", err);
+      }
+    });
   }
 
   //Vuelve a la página anterior del historial (de donde se abrió "Editar perfil"),

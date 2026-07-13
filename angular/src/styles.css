@@ -55,6 +55,32 @@ h1, h2, h3, h4, h5, h6{
   border-radius: 1rem;
 }
 
+/*Oculta las flechas (spinners) de los input type=number del filtro de cantidad*/
+.input-sin-flechas::-webkit-inner-spin-button,
+.input-sin-flechas::-webkit-outer-spin-button{
+  -webkit-appearance: none;
+  margin: 0;
+}
+.input-sin-flechas{
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/*Botones de acción de los movimientos periódicos (perfil): redondos, con borde e icono de color y
+  hover que rellena el fondo. Se definen por id porque Bootstrap va sin capa CSS y gana a las
+  utilidades hover de Tailwind (mismo motivo que #borrar_meta y los mensajes de formulario).*/
+#editar_periodico, #borrar_periodico{
+  border: 1px solid var(--color-borde);
+  border-radius: 50%;
+}
+#editar_periodico:hover{
+  background-color: var(--color-borde);
+}
+#borrar_periodico:hover{
+  background-color: var(--color-peligro);
+  color: #FFFFFF;
+}
+
 /*Bootstrap trae reglas sin capa CSS que ganan siempre a las utilidades de margen de Tailwind (van en capa),
 por eso los mensajes de aviso/error de formularios usan estas clases propias en vez de utilidades de Tailwind*/
 .mensaje-form-arriba{

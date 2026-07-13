@@ -28,6 +28,14 @@
         [class.text-texto]="pestana() !== 'contrasena'">
         Cambiar contraseña
       </button>
+      <button type="button" (click)="cambiarPestana('periodicos')"
+        class="px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors cursor-pointer"
+        [class.border-verde]="pestana() === 'periodicos'"
+        [class.text-verde]="pestana() === 'periodicos'"
+        [class.border-transparent]="pestana() !== 'periodicos'"
+        [class.text-texto]="pestana() !== 'periodicos'">
+        Mov. periódicos
+      </button>
     </div>
 
     @switch (pestana()){
@@ -171,7 +179,196 @@
           </button>
         </form>
       }
+
+      <!-- Pestaña 3: movimientos periódicos, cada uno en su propia tarjeta -->
+      @case ("periodicos"){
+        @if (cargandoPeriodicos()){
+          <div class="bg-blanco w-full rounded-2xl border border-borde shadow-sm p-6 text-sm">
+            <p class="text-boton">Cargando...</p>
+          </div>
+        }@else if (errorPeriodicos()){
+          <div class="bg-blanco w-full rounded-2xl border border-borde shadow-sm p-6 text-sm">
+            <p class="text-peligro font-semibold">{{ errorPeriodicos() }}</p>
+          </div>
+        }@else if (periodicos().length === 0){
+          <div class="bg-blanco w-full rounded-2xl border border-borde shadow-sm p-6 text-sm">
+            <p class="text-boton">No tienes movimientos periódicos.</p>
+          </div>
+        }@else{
+          <p class="text-xs text-boton mb-4">
+            Aquí puedes cambiar la periodicidad y el día de cobro de cada movimiento, o eliminarlo.
+            Tienes {{ periodicos().length }} de 10 movimientos periódicos (el máximo).
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            @for (m of periodicos(); track m.idMovimientoUsuario){
+              <!-- Tarjeta del movimiento periódico, con un borde lateral de color según sea gasto o ingreso.
+                   El borde se define inline (no con la clase .border) porque Bootstrap la marca como !important -->
+              <div class="bg-blanco rounded-2xl shadow-sm p-5 text-sm flex flex-col"
+                [style.border]="'1px solid var(--color-borde)'"
+                [style.borderLeftWidth]="'4px'"
+                [style.borderLeftColor]="m.gasto === 'S' ? 'var(--color-peligro)' : 'var(--color-verde)'">
+                <div class="flex items-start justify-between gap-2">
+                  <div class="min-w-0 flex-1">
+                    <p class="font-titulos font-bold truncate" [title]="m.descripcion">{{ m.descripcion }}</p>
+                    <p class="text-xs text-boton mt-0.5">{{ m.tipo }}</p>
+                  </div>
+                  <span class="font-titulos font-bold shrink-0" [ngClass]="m.gasto === 'S' ? 'text-peligro' : 'text-verde'">
+                    {{ m.gasto === "S" ? "-" : "+" }}{{ m.cantidad.toFixed(2) }} €
+                  </span>
+                </div>
+
+                <div class="mt-3 flex flex-col gap-1 text-xs text-boton">
+                  <p><i class="bi bi-arrow-repeat"></i> {{ textoCobro(m) }}</p>
+                  <p><i class="bi bi-calendar-check"></i> Hasta el {{ m.fechaFinMovimiento | date:'dd/MM/yyyy' }}</p>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-borde flex justify-end gap-2">
+                  <!-- Botones redondos con hover, definidos por id en styles.css (como #borrar_meta):
+                       Bootstrap va sin capa CSS y gana a las utilidades hover de Tailwind, por eso se usan ids -->
+                  <button type="button" (click)="abrirEditarPeriodico(m)" title="Cambiar la periodicidad o el día de cobro"
+                    id="editar_periodico"
+                    class="shrink-0 w-8 h-8 flex items-center justify-center text-boton transition-colors cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button type="button" (click)="abrirEliminarPeriodico(m)" title="Eliminar el movimiento periódico"
+                    id="borrar_periodico"
+                    class="shrink-0 w-8 h-8 flex items-center justify-center text-peligro transition-colors cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      }
     }
   </main>
+
+  <!-- Modal para cambiar el día de cobro de un movimiento periódico -->
+  @if (editandoPeriodico(); as m){
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-texto/30 backdrop-blur-sm" (click)="cerrarEditarPeriodico()">
+      <div class="relative bg-blanco text-texto font-texto w-full max-w-sm rounded-2xl shadow-xl p-6"
+        [style.border]="m.gasto === 'S' ? '3px solid var(--color-peligro)' : '3px solid var(--color-verde)'"
+        (click)="$event.stopPropagation()">
+        <div class="flex items-baseline gap-1 mb-3">
+          <span class="inline-flex items-center justify-center rounded-full border shrink-0"
+            [ngClass]="m.gasto === 'S' ? 'border-peligro text-peligro' : 'border-verde text-verde'"
+            style="width: 1.75rem; height: 1.75rem;">
+            <i class="bi bi-pencil-square" style="font-size: 1.1rem; line-height: 1;"></i>
+          </span>
+          <h3 class="font-titulos text-lg font-bold leading-none">Editar movimiento periódico</h3>
+        </div>
+
+        <p class="text-sm mb-4 text-boton">{{ m.descripcion }}</p>
+
+        <label class="block text-sm font-medium mb-1">Periodicidad *</label>
+        <select [(ngModel)]="periodoEdit" (ngModelChange)="cambioPeriodoEdit()"
+          class="w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:border-boton cursor-pointer">
+          @for (p of periodos(); track p.idPeriodo){
+            <option [ngValue]="p.periodo">{{ p.periodo }}</option>
+          }
+        </select>
+
+        @if (periodoEdit === "Diario"){
+          <p class="text-xs text-boton">Se {{ m.gasto === "S" ? "cobra" : "ingresa" }} todos los días, no necesita día de cobro.</p>
+        }@else if (periodoEdit === "Semanal"){
+          <label class="block text-sm font-medium mb-1">Día de la semana *</label>
+          <select [(ngModel)]="diaCobroEdit"
+            class="w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton cursor-pointer">
+            @for (d of diasSemana; track $index){
+              <option [ngValue]="$index + 1">{{ d }}</option>
+            }
+          </select>
+        }@else if (periodoEdit === "Anual"){
+          <div class="flex gap-4">
+            <div class="flex-1">
+              <label class="block text-sm font-medium mb-1">Mes *</label>
+              <select [(ngModel)]="mesCobroEdit" (ngModelChange)="ajustarDiaCobro()"
+                class="w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton cursor-pointer">
+                @for (mes of meses; track $index){
+                  <option [ngValue]="$index + 1">{{ mes }}</option>
+                }
+              </select>
+            </div>
+            <div class="flex-1">
+              <label class="block text-sm font-medium mb-1">Día *</label>
+              <select [(ngModel)]="diaCobroEdit"
+                class="w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton cursor-pointer">
+                @for (d of diasEditables; track d){
+                  <option [ngValue]="d">{{ d }}</option>
+                }
+              </select>
+            </div>
+          </div>
+        }@else{
+          <label class="block text-sm font-medium mb-1">Día del mes *</label>
+          <select [(ngModel)]="diaCobroEdit"
+            class="w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton cursor-pointer">
+            @for (d of diasEditables; track d){
+              <option [ngValue]="d">{{ d }}</option>
+            }
+          </select>
+          <p class="text-xs text-boton mt-1">
+            El máximo es el día 30 porque no todos los meses tienen día 31.
+            En febrero se {{ m.gasto === "S" ? "cobra" : "ingresa" }} el último día del mes (28, o 29 si es bisiesto).
+          </p>
+        }
+
+        @if (errorDiaCobro()){
+          <p class="text-peligro text-sm mt-3 font-semibold">{{ errorDiaCobro() }}</p>
+        }
+
+        <div class="flex gap-3 mt-6">
+          <button type="button" (click)="cerrarEditarPeriodico()"
+            class="flex-1 py-2.5 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde font-medium transition-colors cursor-pointer">Cancelar</button>
+          <button type="button" (click)="guardarPeriodico()" [disabled]="guardandoPeriodico()"
+            class="flex-1 py-2.5 px-4 rounded-xl text-blanco font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+            [ngClass]="m.gasto === 'S' ? 'bg-peligro hover:bg-peligro/80' : 'bg-verde hover:bg-verde/80'">
+            {{ guardandoPeriodico() ? "Guardando..." : "Guardar" }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal de confirmación para eliminar un movimiento periódico -->
+  @if (eliminandoPeriodico(); as m){
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-texto/30 backdrop-blur-sm" (click)="cerrarEliminarPeriodico()">
+      <div class="relative bg-blanco text-texto font-texto w-full max-w-sm rounded-2xl shadow-xl p-6"
+        style="border: 3px solid var(--color-peligro)"
+        (click)="$event.stopPropagation()">
+        <div class="flex items-baseline gap-1 mb-3">
+          <span class="inline-flex items-center justify-center rounded-full border border-peligro text-peligro shrink-0"
+            style="width: 1.75rem; height: 1.75rem;">
+            <i class="bi bi-trash3" style="font-size: 1.1rem; line-height: 1;"></i>
+          </span>
+          <h3 class="font-titulos text-lg font-bold leading-none">Eliminar movimiento periódico</h3>
+        </div>
+
+        <p class="text-sm">
+          ¿Seguro que quieres eliminar «{{ m.descripcion }}»?
+          Dejará de {{ m.gasto === "S" ? "cobrarse" : "ingresarse" }} automáticamente.
+          Los movimientos ya generados no se borran.
+        </p>
+
+        @if (errorEliminar()){
+          <p class="text-peligro text-sm mt-3 font-semibold">{{ errorEliminar() }}</p>
+        }
+
+        <div class="flex gap-3 mt-6">
+          <button type="button" (click)="cerrarEliminarPeriodico()"
+            class="flex-1 py-2.5 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde font-medium transition-colors cursor-pointer">Cancelar</button>
+          <button type="button" (click)="eliminarPeriodico()" [disabled]="borrandoPeriodico()"
+            class="flex-1 py-2.5 px-4 rounded-xl text-blanco font-semibold bg-peligro hover:bg-peligro/80 transition-colors disabled:opacity-50 cursor-pointer">
+            {{ borrandoPeriodico() ? "Eliminando..." : "Eliminar" }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
   <app-footer/>
 </div>

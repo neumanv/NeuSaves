@@ -1,6 +1,6 @@
 <div class="bg-fondo text-texto font-texto min-h-screen flex flex-col">
   <app-header [mostrarPerfil]="true" />
-  <main class="flex-1 w-[92%] max-w-4xl mx-auto flex flex-col pt-4 pb-12 px-4">
+  <main class="flex-1 w-[92%] max-w-[1187px] mx-auto flex flex-col pt-4 pb-12 px-4">
     <!-- Botón volver al panel del usuario -->
     <a [routerLink]="['/panel-usuario', token]"
       class="enlace-limpio self-start mb-8 inline-flex items-center gap-2 text-sm font-medium transition-transform hover:-translate-x-1 cursor-pointer">
@@ -13,52 +13,149 @@
       <span class="text-sm text-texto/60">{{ totalElementos() }} en total</span>
     </div>
 
-    <!-- Tabla con todos los movimientos del usuario -->
-    <div class="bg-blanco border border-borde rounded-2xl shadow-sm overflow-hidden">
-      <table class="w-full text-sm text-left">
-        <thead class="text-texto/60 border-b border-borde">
-          <tr>
-            <th class="px-6 py-3 font-medium">Descripción</th>
-            <th class="px-4 py-3 font-medium">Tipo</th>
-            <th class="px-4 py-3 font-medium">Fecha</th>
-            <th class="px-6 py-3 font-medium text-right">Cantidad</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (m of movimientos(); track $index){
-            <tr class="border-b border-borde/50 last:border-0">
-              <!-- Descripción: sólida hasta 15 caracteres y luego se desvanece -->
-              <td class="px-6 py-3">
-                <span class="block max-w-[17ch] overflow-hidden whitespace-nowrap align-bottom
-                  [mask-image:linear-gradient(to_right,#000_15ch,transparent_17ch)]
-                  [-webkit-mask-image:linear-gradient(to_right,#000_15ch,transparent_17ch)]"
-                  [title]="m.descripcion">{{ m.descripcion }}</span>
-              </td>
-              <!-- Tipo: con su icono, sólido hasta 12 caracteres y luego se desvanece -->
-              <td class="px-4 py-3">
-                <span class="flex items-center gap-2 max-w-[16ch] overflow-hidden whitespace-nowrap align-bottom
-                  [mask-image:linear-gradient(to_right,#000_14ch,transparent_16ch)]
-                  [-webkit-mask-image:linear-gradient(to_right,#000_14ch,transparent_16ch)]"
-                  [title]="m.tipo">
-                  <i class="bi shrink-0" [ngClass]="iconoTipo(m.tipo)"></i>
-                  {{ m.tipo }}
-                </span>
-              </td>
-              <td class="px-4 py-3 whitespace-nowrap">{{ m.fechaMovimiento | date:"dd/MM/yyyy" }}</td>
-              <!-- Cantidad: rojo si es gasto (S), verde si es ingreso (N) -->
-              <td class="px-6 py-3 text-right font-semibold whitespace-nowrap"
-                [class.text-peligro]="m.gasto === 'S'"
-                [class.text-verde]="m.gasto === 'N'">
-                {{ m.gasto === 'S' ? '-' : '+' }}{{ m.cantidad | number:"1.2-2" }} €
-              </td>
-            </tr>
-          } @empty {
+    <!-- Columna de filtros (izquierda) + tabla (derecha) -->
+    <div class="flex flex-col lg:flex-row gap-6 items-start">
+
+      <!-- Filtros: tipo de movimiento, rango de fechas y rango de cantidad. Se aplican sobre la marcha -->
+      <aside class="w-full lg:w-[292px] shrink-0 bg-blanco border border-borde rounded-2xl shadow-sm p-5 text-sm">
+
+        <!-- 1) Tipo de movimiento: gasto/ingreso y tipo concreto -->
+        <div class="mb-5">
+          <p class="font-medium mb-2">Tipo de movimiento</p>
+          <div class="grid grid-cols-3 gap-1 mb-3">
+            <button type="button" (click)="cambiarGasto('')"
+              class="py-1.5 px-2 rounded-lg border text-xs font-medium transition-colors cursor-pointer"
+              [class.bg-boton]="filtroGasto === ''" [class.text-blanco]="filtroGasto === ''"
+              [class.border-boton]="filtroGasto === ''" [class.bg-fondo]="filtroGasto !== ''"
+              [class.border-borde]="filtroGasto !== ''">Todos</button>
+            <button type="button" (click)="cambiarGasto('N')"
+              class="py-1.5 px-2 rounded-lg border text-xs font-medium transition-colors cursor-pointer"
+              [class.bg-verde]="filtroGasto === 'N'" [class.text-blanco]="filtroGasto === 'N'"
+              [class.border-verde]="filtroGasto === 'N'" [class.bg-fondo]="filtroGasto !== 'N'"
+              [class.border-borde]="filtroGasto !== 'N'">Ingresos</button>
+            <button type="button" (click)="cambiarGasto('S')"
+              class="py-1.5 px-2 rounded-lg border text-xs font-medium transition-colors cursor-pointer"
+              [class.bg-peligro]="filtroGasto === 'S'" [class.text-blanco]="filtroGasto === 'S'"
+              [class.border-peligro]="filtroGasto === 'S'" [class.bg-fondo]="filtroGasto !== 'S'"
+              [class.border-borde]="filtroGasto !== 'S'">Gastos</button>
+          </div>
+          <!-- Desplegable de tipo personalizado, con los iconos de "Añadir gasto/ingreso" -->
+          <div class="relative">
+            <button type="button" (click)="toggleTipoFiltro()"
+              class="w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm flex items-center gap-2 text-left cursor-pointer">
+              @if (filtroTipoSel(); as t){
+                <i class="bi shrink-0" [ngClass]="iconoTipo(t.tipo)"></i>
+                <span class="truncate">{{ t.tipo }}</span>
+              }@else{
+                <span>Todos los tipos</span>
+              }
+              <i class="bi bi-chevron-down ml-auto text-[10px]"></i>
+            </button>
+
+            @if (tipoAbierto()){
+              <div class="fixed inset-0 z-40" (click)="cerrarTipoFiltro()"></div>
+              <div class="absolute left-0 right-0 z-50 mt-1 bg-blanco border border-borde rounded-lg shadow-xl overflow-hidden max-h-56 overflow-y-auto">
+                <button type="button" (click)="seleccionarTipoFiltro(null)"
+                  class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-fondo cursor-pointer">
+                  <i class="bi bi-list shrink-0"></i>
+                  <span class="truncate">Todos los tipos</span>
+                </button>
+                @for (t of tiposFiltro(); track t.idMovimiento){
+                  <button type="button" (click)="seleccionarTipoFiltro(t)"
+                    class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-fondo cursor-pointer">
+                    <i class="bi shrink-0" [ngClass]="iconoTipo(t.tipo)"></i>
+                    <span class="truncate">{{ t.tipo }}</span>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- 2) Rango de fechas: grid de 2 columnas para que ambos inputs queden alineados al mismo borde -->
+        <div class="mb-5">
+          <p class="font-medium mb-2">Rango de fechas</p>
+          <div class="grid grid-cols-[3rem_1fr] gap-x-3 gap-y-2 items-center">
+            <span class="text-xs text-boton">Desde</span>
+            <input type="date" [(ngModel)]="filtroDesde" (ngModelChange)="aplicarFiltros()"
+              class="w-full min-w-0 bg-fondo border border-borde rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-boton cursor-pointer" />
+            <span class="text-xs text-boton">Hasta</span>
+            <input type="date" [(ngModel)]="filtroHasta" (ngModelChange)="aplicarFiltros()"
+              class="w-full min-w-0 bg-fondo border border-borde rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-boton cursor-pointer" />
+          </div>
+        </div>
+
+        <!-- 3) Rango de cantidad -->
+        <div class="mb-5">
+          <p class="font-medium mb-2">Rango de cantidad (€)</p>
+          <div class="flex items-center gap-2">
+            <input type="number" [(ngModel)]="filtroMin" (ngModelChange)="aplicarFiltros()" placeholder="Mín" min="-99999.99" max="99999.99" step="0.01"
+              class="input-sin-flechas w-full min-w-0 bg-fondo border border-borde rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-boton" />
+            <span class="text-boton">–</span>
+            <input type="number" [(ngModel)]="filtroMax" (ngModelChange)="aplicarFiltros()" placeholder="Máx" min="-99999.99" max="99999.99" step="0.01"
+              class="input-sin-flechas w-full min-w-0 bg-fondo border border-borde rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-boton" />
+          </div>
+        </div>
+
+        @if (errorFiltro()){
+          <p class="text-peligro text-xs font-semibold mb-3">{{ errorFiltro() }}</p>
+        }
+
+        <button type="button" (click)="limpiarFiltros()"
+          class="w-full py-2 px-3 rounded-xl bg-fondo border border-borde hover:bg-borde text-sm font-medium transition-colors cursor-pointer">
+          Limpiar
+        </button>
+      </aside>
+
+      <!-- Tabla con los movimientos del usuario -->
+      <div class="flex-1 min-w-0 w-full bg-blanco border border-borde rounded-2xl shadow-sm overflow-hidden">
+        <table class="w-full text-sm text-left">
+          <thead class="text-texto/60 border-b border-borde">
             <tr>
-              <td colspan="4" class="px-6 py-10 text-center text-texto/50">No hay movimientos todavía</td>
+              <th class="px-6 py-3 font-medium">Descripción</th>
+              <th class="px-4 py-3 font-medium">Tipo</th>
+              <th class="px-4 py-3 font-medium">Fecha</th>
+              <th class="px-6 py-3 font-medium text-right">Cantidad</th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (m of movimientos(); track $index){
+              <tr class="border-b border-borde/50 last:border-0">
+                <!-- Descripción: sólida hasta 15 caracteres y luego se desvanece -->
+                <td class="px-6 py-3">
+                  <span class="block max-w-[17ch] overflow-hidden whitespace-nowrap align-bottom
+                    [mask-image:linear-gradient(to_right,#000_15ch,transparent_17ch)]
+                    [-webkit-mask-image:linear-gradient(to_right,#000_15ch,transparent_17ch)]"
+                    [title]="m.descripcion">{{ m.descripcion }}</span>
+                </td>
+                <!-- Tipo: con su icono, sólido hasta 12 caracteres y luego se desvanece -->
+                <td class="px-4 py-3">
+                  <span class="flex items-center gap-2 max-w-[16ch] overflow-hidden whitespace-nowrap align-bottom
+                    [mask-image:linear-gradient(to_right,#000_14ch,transparent_16ch)]
+                    [-webkit-mask-image:linear-gradient(to_right,#000_14ch,transparent_16ch)]"
+                    [title]="m.tipo">
+                    <i class="bi shrink-0" [ngClass]="iconoTipo(m.tipo)"></i>
+                    {{ m.tipo }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">{{ m.fechaMovimiento | date:"dd/MM/yyyy" }}</td>
+                <!-- Cantidad: rojo si es gasto (S), verde si es ingreso (N) -->
+                <td class="px-6 py-3 text-right font-semibold whitespace-nowrap"
+                  [class.text-peligro]="m.gasto === 'S'"
+                  [class.text-verde]="m.gasto === 'N'">
+                  {{ m.gasto === 'S' ? '-' : '+' }}{{ m.cantidad | number:"1.2-2" }} €
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="px-6 py-10 text-center text-texto/50">
+                  {{ hayFiltros() ? "No hay movimientos que coincidan con los filtros" : "No hay movimientos todavía" }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- Paginación: cada página muestra 50 movimientos -->

@@ -11,10 +11,7 @@
       <div class="self-stretch mt-8 grid grid-cols-5 gap-4 items-stretch">
         <div class="bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-6 text-left min-w-0">
           <p class="text-sm font-medium">Tu saldo:</p>
-          <p class="font-titulos text-4xl font-bold mt-2"
-            [class.text-peligro]="saldoNivel() === 'bajo'"
-            [class.text-aviso]="saldoNivel() === 'medio'"
-            [class.text-verde]="saldoNivel() === 'alto'">
+          <p class="font-titulos text-4xl font-bold mt-2 text-texto">
             {{ saldoTexto() }} €
           </p>
         </div>
@@ -328,7 +325,11 @@
         <p class="text-sm">¿Seguro que quieres guardar este {{ esGasto() ? "gasto" : "ingreso" }}? Una vez guardado no se puede borrar.</p>
 
         @if (esPeriodico()){
-          <p class="text-sm mt-3">Este {{ esGasto() ? "gasto" : "ingreso" }} es periódico. Para modificarlo más adelante deberás hacerlo desde tu perfil.</p>
+          <p class="text-sm mt-3">
+            Este {{ esGasto() ? "gasto" : "ingreso" }} es periódico: {{ esGasto() ? "se cobrará" : "se ingresará" }} automáticamente
+            {{ textoCobroPeriodico() }} hasta el {{ nuevoMovimiento.fechaFin | date:'dd/MM/yyyy' }}.
+            Podrás cambiar la periodicidad y el día de cobro, o eliminarlo, desde tu perfil, en la pestaña «Mov. periódicos».
+          </p>
         }
 
         <div class="flex gap-3 mt-6">

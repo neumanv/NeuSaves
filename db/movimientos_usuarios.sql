@@ -14,6 +14,13 @@ RETURNS TRIGGER AS $$
             saldo_anterior := 0;
         END IF;
 
+        --Los movimientos periódicos son plantillas: no mueven dinero al crearse.
+        --El dinero lo mueven los cobros que genera el backend cada día de cobro.
+        IF NEW.id_periodo IS NOT NULL THEN
+            NEW.saldo := saldo_anterior;
+            RETURN NEW;
+        END IF;
+
         SELECT gasto INTO es_gasto
         FROM movimientos
         WHERE id_movimiento = NEW.id_movimiento;
