@@ -1,5 +1,7 @@
 package com.gastos.backend.repository;
 
+import com.gastos.backend.dto.EstadisticaMes;
+import com.gastos.backend.dto.EstadisticaTipo;
 import com.gastos.backend.dto.MovimientoPeriodico;
 import com.gastos.backend.dto.UltimoMovimiento;
 import com.gastos.backend.model.MovimientoUsuario;
@@ -113,4 +115,41 @@ public interface MovimientoUsuarioRepository extends JpaRepository<MovimientoUsu
                    "WHERE mu.id_usuario = :usuario " +
                    "ORDER BY mu.id_movimiento_usuario DESC", nativeQuery = true)
     List<MovimientoPeriodico> movimientosPeriodicos(@Param("usuario") Long usuario);
+
+    //--- Estadísticas (con rango de fechas opcional para filtrar por mes o año) ---
+    //Total de dinero y número de movimientos por tipo (los periódicos son plantillas, se excluyen)
+    @Query(value = "SELECT m.tipo AS tipo, m.gasto AS gasto, " +
+                   "COALESCE(SUM(mu.cantidad), 0) AS total, COUNT(*) AS cantidad " +
+                   "FROM movimientos_usuarios mu " +
+                   "JOIN movimientos m ON mu.id_movimiento = m.id_movimiento " +
+                   "WHERE mu.id_usuario = :usuario AND mu.id_periodo IS NULL " +
+                   "AND (CAST(:desde AS date) IS NULL OR mu.fecha_movimiento >= :desde) " +
+                   "AND (CAST(:hasta AS date) IS NULL OR mu.fecha_movimiento <= :hasta) " +
+                   "GROUP BY m.tipo, m.gasto " +
+                   "ORDER BY total DESC", nativeQuery = true)
+    List<EstadisticaTipo> estadisticasPorTipo(@Param("usuario") Long usuario,
+                                              @Param("desde") LocalDate desde,
+                                              @Param("hasta") LocalDate hasta);
+
+    //Ingresos y gastos agregados por mes (dentro de un rango opcional), para la evolución mensual
+    @Query(value = "SELECT TO_CHAR(mu.fecha_movimiento, 'YYYY-MM') AS mes, " +
+                   "COALESCE(SUM(CASE WHEN m.gasto = 'N' THEN mu.cantidad ELSE 0 END), 0) AS ingresos, " +
+                   "COALESCE(SUM(CASE WHEN m.gasto = 'S' THEN mu.cantidad ELSE 0 END), 0) AS gastos " +
+                   "FROM movimientos_usuarios mu " +
+                   "JOIN movimientos m ON mu.id_movimiento = m.id_movimiento " +
+                   "WHERE mu.id_usuario = :usuario AND mu.id_periodo IS NULL " +
+                   "AND (CAST(:desde AS date) IS NULL OR mu.fecha_movimiento >= :desde) " +
+                   "AND (CAST(:hasta AS date) IS NULL OR mu.fecha_movimiento <= :hasta) " +
+                   "GROUP BY TO_CHAR(mu.fecha_movimiento, 'YYYY-MM') " +
+                   "ORDER BY mes", nativeQuery = true)
+    List<EstadisticaMes> estadisticasPorMes(@Param("usuario") Long usuario,
+                                            @Param("desde") LocalDate desde,
+                                            @Param("hasta") LocalDate hasta);
+
+    //Años que tienen algún movimiento (para el filtro de la pantalla de estadísticas), los más recientes primero
+    @Query(value = "SELECT DISTINCT EXTRACT(YEAR FROM mu.fecha_movimiento)::int AS anio " +
+                   "FROM movimientos_usuarios mu " +
+                   "WHERE mu.id_usuario = :usuario AND mu.id_periodo IS NULL AND mu.fecha_movimiento IS NOT NULL " +
+                   "ORDER BY anio DESC", nativeQuery = true)
+    List<Integer> aniosConMovimientos(@Param("usuario") Long usuario);
 }

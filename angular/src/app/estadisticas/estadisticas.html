@@ -1,0 +1,191 @@
+<div class="bg-fondo text-texto font-texto min-h-screen flex flex-col">
+  <app-header [mostrarPerfil]="true" />
+  <main class="flex-1 w-[92%] max-w-5xl mx-auto flex flex-col pt-4 pb-12 px-4">
+    <!-- Botón volver al panel del usuario -->
+    <a [routerLink]="['/panel-usuario', token]"
+      class="enlace-limpio self-start mb-8 inline-flex items-center gap-2 text-sm font-medium transition-transform hover:-translate-x-1 cursor-pointer">
+      <i class="bi bi-arrow-left-circle"></i>
+      Volver
+    </a>
+
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+      <h1 class="font-titulos text-3xl font-bold">Estadísticas</h1>
+
+      <!-- Filtro por mes o año -->
+      <div class="flex items-center gap-2">
+        <div class="flex rounded-lg border border-borde overflow-hidden text-sm">
+          <button type="button" (click)="cambiarModo('mes')"
+            class="py-1.5 px-3 font-medium transition-colors cursor-pointer"
+            [class.bg-boton]="modo() === 'mes'" [class.text-blanco]="modo() === 'mes'"
+            [class.bg-blanco]="modo() !== 'mes'">Mes</button>
+          <button type="button" (click)="cambiarModo('anio')"
+            class="py-1.5 px-3 font-medium transition-colors cursor-pointer border-l border-borde"
+            [class.bg-boton]="modo() === 'anio'" [class.text-blanco]="modo() === 'anio'"
+            [class.bg-blanco]="modo() !== 'anio'">Año</button>
+        </div>
+
+        @if (modo() === 'mes'){
+          <input type="month" [(ngModel)]="mesSel" (ngModelChange)="cambiarPeriodo()"
+            class="bg-blanco border border-borde rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-boton cursor-pointer" />
+        }@else{
+          <select [(ngModel)]="anioSel" (ngModelChange)="cambiarPeriodo()"
+            class="bg-blanco border border-borde rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-boton cursor-pointer">
+            @for (a of anios(); track a){
+              <option [ngValue]="a">{{ a }}</option>
+            }
+          </select>
+        }
+      </div>
+    </div>
+
+    @if (cargando()){
+      <div class="bg-blanco border border-borde rounded-2xl shadow-sm p-10 text-center text-boton">Cargando...</div>
+    }@else if (!hayDatos()){
+      <div class="bg-blanco border border-borde rounded-2xl shadow-sm p-10 text-center text-texto/50">
+        No hay movimientos en el {{ modo() === 'mes' ? 'mes' : 'año' }} seleccionado.
+      </div>
+    }@else if (datos(); as d){
+
+      <!-- Tarjetas resumen -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="bg-blanco border border-borde rounded-2xl shadow-sm px-5 py-5">
+          <p class="text-sm font-medium">Ingresos totales</p>
+          <p class="font-titulos text-2xl lg:text-3xl font-bold mt-2 text-verde">+{{ euros(d.totalIngresos) }}</p>
+        </div>
+        <div class="bg-blanco border border-borde rounded-2xl shadow-sm px-5 py-5">
+          <p class="text-sm font-medium">Gastos totales</p>
+          <p class="font-titulos text-2xl lg:text-3xl font-bold mt-2 text-peligro">-{{ euros(d.totalGastos) }}</p>
+        </div>
+        <div class="bg-blanco border border-borde rounded-2xl shadow-sm px-5 py-5">
+          <p class="text-sm font-medium">Balance</p>
+          <p class="font-titulos text-2xl lg:text-3xl font-bold mt-2 text-texto">{{ euros(d.balance) }}</p>
+        </div>
+      </div>
+
+      <!-- Fila: donut ingresos/gastos + evolución mensual -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+        <!-- Donut: ingresos vs gastos -->
+        <div class="bg-blanco border border-borde rounded-2xl shadow-sm p-6">
+          <h2 class="font-titulos text-lg font-bold mb-4">Ingresos vs Gastos</h2>
+          <div class="flex items-center gap-6">
+            <div class="relative w-40 h-40 shrink-0">
+              <svg viewBox="0 0 160 160" class="w-40 h-40 -rotate-90">
+                <circle cx="80" cy="80" [attr.r]="RADIO_DONUT" fill="none" stroke="var(--color-peligro)" stroke-width="22" />
+                <circle cx="80" cy="80" [attr.r]="RADIO_DONUT" fill="none" stroke="var(--color-verde)" stroke-width="22"
+                  [attr.stroke-dasharray]="dashIngresos() + ' ' + CIRCUNFERENCIA" stroke-linecap="butt" />
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <span class="text-xs text-boton">Balance</span>
+                <span class="font-titulos text-base font-bold">{{ euros(d.balance) }}</span>
+              </div>
+            </div>
+            <div class="flex flex-col gap-3 text-sm min-w-0">
+              <div>
+                <p class="flex items-center gap-2 font-medium">
+                  <span class="w-3 h-3 rounded-full bg-verde shrink-0"></span> Ingresos
+                </p>
+                <p class="text-verde font-semibold mt-0.5">{{ porcentajeIngresos() }}% · +{{ euros(d.totalIngresos) }}</p>
+              </div>
+              <div>
+                <p class="flex items-center gap-2 font-medium">
+                  <span class="w-3 h-3 rounded-full bg-peligro shrink-0"></span> Gastos
+                </p>
+                <p class="text-peligro font-semibold mt-0.5">{{ porcentajeGastos() }}% · -{{ euros(d.totalGastos) }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Evolución mensual (últimos 6 meses) -->
+        <div class="bg-blanco border border-borde rounded-2xl shadow-sm p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="font-titulos text-lg font-bold">Evolución mensual</h2>
+            <div class="flex items-center gap-3 text-xs">
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-verde"></span> Ingresos</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-peligro"></span> Gastos</span>
+            </div>
+          </div>
+          <div class="flex items-end justify-between gap-2" style="height: 170px">
+            @for (m of evolucionMensual(); track m.etiqueta){
+              <div class="flex-1 flex flex-col items-center h-full justify-end">
+                <div class="flex items-end justify-center gap-1 w-full" style="height: 140px">
+                  <div class="w-3 rounded-t bg-verde" [style.height.px]="m.alturaIngresos"
+                    [title]="'Ingresos: ' + euros(m.ingresos)"></div>
+                  <div class="w-3 rounded-t bg-peligro" [style.height.px]="m.alturaGastos"
+                    [title]="'Gastos: ' + euros(m.gastos)"></div>
+                </div>
+                <span class="mt-2 text-xs text-boton">{{ m.etiqueta }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Fila: gastos por tipo + ingresos por tipo -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Gastos por tipo -->
+        <div class="bg-blanco border border-borde rounded-2xl shadow-sm p-6">
+          <h2 class="font-titulos text-lg font-bold mb-4">Gastos por tipo</h2>
+          @if (gastosPorTipo().length === 0){
+            <p class="text-sm text-texto/50">No hay gastos registrados.</p>
+          }@else{
+            <div class="flex flex-col gap-3">
+              @for (b of gastosPorTipo(); track b.tipo){
+                <div class="flex items-center gap-2 text-sm">
+                  <i class="bi shrink-0 w-4 text-center" [ngClass]="b.icono"></i>
+                  <span class="w-24 shrink-0 truncate" [title]="b.tipo">{{ b.tipo }}</span>
+                  <div class="flex-1 min-w-0 bg-fondo rounded-full h-2.5 overflow-hidden">
+                    <div class="h-full rounded-full bg-peligro" [style.width.%]="b.porcentaje"></div>
+                  </div>
+                  <span class="w-20 shrink-0 text-right font-semibold text-peligro">{{ euros(b.valor) }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Ingresos por tipo -->
+        <div class="bg-blanco border border-borde rounded-2xl shadow-sm p-6">
+          <h2 class="font-titulos text-lg font-bold mb-4">Ingresos por tipo</h2>
+          @if (ingresosPorTipo().length === 0){
+            <p class="text-sm text-texto/50">No hay ingresos registrados.</p>
+          }@else{
+            <div class="flex flex-col gap-3">
+              @for (b of ingresosPorTipo(); track b.tipo){
+                <div class="flex items-center gap-2 text-sm">
+                  <i class="bi shrink-0 w-4 text-center" [ngClass]="b.icono"></i>
+                  <span class="w-24 shrink-0 truncate" [title]="b.tipo">{{ b.tipo }}</span>
+                  <div class="flex-1 min-w-0 bg-fondo rounded-full h-2.5 overflow-hidden">
+                    <div class="h-full rounded-full bg-verde" [style.width.%]="b.porcentaje"></div>
+                  </div>
+                  <span class="w-20 shrink-0 text-right font-semibold text-verde">{{ euros(b.valor) }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Tipos de movimiento más comunes (por número de movimientos) -->
+      <div class="bg-blanco border border-borde rounded-2xl shadow-sm p-6">
+        <h2 class="font-titulos text-lg font-bold mb-4">Tipos de movimiento más comunes</h2>
+        <div class="flex flex-col gap-3">
+          @for (b of tiposComunes(); track b.tipo){
+            <div class="flex items-center gap-2 text-sm">
+              <i class="bi shrink-0 w-4 text-center" [ngClass]="b.icono"></i>
+              <span class="w-24 shrink-0 truncate" [title]="b.tipo">{{ b.tipo }}</span>
+              <div class="flex-1 min-w-0 bg-fondo rounded-full h-2.5 overflow-hidden">
+                <div class="h-full rounded-full bg-boton" [style.width.%]="b.porcentaje"></div>
+              </div>
+              <span class="w-24 shrink-0 text-right font-semibold">
+                {{ b.valor }} {{ b.valor === 1 ? "movimiento" : "movimientos" }}
+              </span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </main>
+  <app-footer/>
+</div>

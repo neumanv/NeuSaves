@@ -1,5 +1,7 @@
 package com.gastos.backend.controller;
 
+import com.gastos.backend.dto.EstadisticaMes;
+import com.gastos.backend.dto.EstadisticaTipo;
 import com.gastos.backend.dto.MovimientoPeriodico;
 import com.gastos.backend.dto.UltimoMovimiento;
 import com.gastos.backend.model.MovimientoUsuario;
@@ -164,6 +166,45 @@ public class MovimientoUsuarioController{
             return null;
         }
         return plantilla;
+    }
+
+    //Estadísticas del usuario para la pantalla de gráficas: totales, desglose por tipo y evolución mensual.
+    //Se puede filtrar por un rango de fechas (para ver un mes o un año concretos).
+    @GetMapping("/estadisticas")
+    public Map<String, Object> estadisticas(@RequestParam Long usuario,
+                                            @RequestParam(required = false) LocalDate desde,
+                                            @RequestParam(required = false) LocalDate hasta){
+        List<EstadisticaTipo> porTipo = movimientoUsuarioRepository.estadisticasPorTipo(usuario, desde, hasta);
+
+        //Totales agregados a partir del desglose por tipo
+        BigDecimal totalIngresos = BigDecimal.ZERO;
+        BigDecimal totalGastos = BigDecimal.ZERO;
+        long numeroMovimientos = 0;
+        for (EstadisticaTipo t : porTipo){
+            if ("N".equals(t.getGasto())){
+                totalIngresos = totalIngresos.add(t.getTotal());
+            }else{
+                totalGastos = totalGastos.add(t.getTotal());
+            }
+            numeroMovimientos += t.getCantidad();
+        }
+
+        List<EstadisticaMes> porMes = movimientoUsuarioRepository.estadisticasPorMes(usuario, desde, hasta);
+
+        Map<String, Object> respuesta = new java.util.LinkedHashMap<>();
+        respuesta.put("totalIngresos", totalIngresos);
+        respuesta.put("totalGastos", totalGastos);
+        respuesta.put("balance", totalIngresos.subtract(totalGastos));
+        respuesta.put("numeroMovimientos", numeroMovimientos);
+        respuesta.put("porTipo", porTipo);
+        respuesta.put("porMes", porMes);
+        return respuesta;
+    }
+
+    //Años con movimientos del usuario, para poblar el desplegable de años del filtro de estadísticas
+    @GetMapping("/estadisticas/anios")
+    public List<Integer> aniosConDatos(@RequestParam Long usuario){
+        return movimientoUsuarioRepository.aniosConMovimientos(usuario);
     }
 
     private LocalDate primerDiaDelMes(LocalDate fecha){
