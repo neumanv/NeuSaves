@@ -37,6 +37,14 @@ public class UsuarioController{
         return usuarioRepository.findAll();
     }
 
+    //Datos de un único usuario (principal o subusuario) para la pantalla de editar perfil
+    @GetMapping("/{id}")
+    public ResponseEntity<Usuario> obtenerUsuario(@PathVariable Long id){
+        return usuarioRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @PostMapping
     public ResponseEntity<Usuario> crearUsuario(@RequestBody Usuario usuario){
         usuario.setIdUsuario(null);
@@ -72,6 +80,21 @@ public class UsuarioController{
             return ResponseEntity.notFound().build();
         }
 
+        //El nombre y el primer apellido son obligatorios para todos
+        if (datos.getNombre() == null || datos.getNombre().isBlank()
+                || datos.getApellido1() == null || datos.getApellido1().isBlank()){
+            return ResponseEntity.badRequest().build();
+        }
+
+        //Un subusuario solo tiene nombre, apellidos y sexo: no tiene email, DNI, teléfono ni prefijo
+        if (usuario.getIdUsuarioPrincipal() != null){
+            usuario.setNombre(datos.getNombre().trim());
+            usuario.setApellido1(datos.getApellido1().trim());
+            usuario.setApellido2(datos.getApellido2());
+            usuario.setSexo(datos.getSexo());
+            return ResponseEntity.ok(usuarioRepository.save(usuario));
+        }
+
         String email = datos.getEmail() == null ? "" : datos.getEmail().trim();
         if (email.isEmpty() || email.length() > 50 || !email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")){
             return ResponseEntity.badRequest().build();
@@ -80,11 +103,6 @@ public class UsuarioController{
         Usuario existente = usuarioRepository.findByEmailIgnoreCase(email).orElse(null);
         if (existente != null && !existente.getIdUsuario().equals(id)){
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
-        }
-
-        if (datos.getNombre() == null || datos.getNombre().isBlank()
-                || datos.getApellido1() == null || datos.getApellido1().isBlank()){
-            return ResponseEntity.badRequest().build();
         }
 
         usuario.setEmail(email);

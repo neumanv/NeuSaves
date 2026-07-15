@@ -46,125 +46,87 @@
         </div>
       </div>
 
-      <!-- Debajo de las tarjetas: tabla de movimientos a la izquierda y estadísticas a la derecha -->
+      <!-- Debajo de las tarjetas: tabla de movimientos a la izquierda (hueco vacío a la derecha) -->
       <div class="self-stretch mt-6 flex flex-col gap-6">
-      <!-- Fila superior: tabla de movimientos y estadísticas, a la misma altura -->
       <div class="flex flex-col lg:flex-row gap-6 items-stretch">
       <!-- Tabla de últimos movimientos: con enlace "Ver todos" arriba a la derecha -->
-      <div class="w-full lg:w-1/2 bg-blanco border border-borde rounded-2xl shadow-sm overflow-hidden">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-borde">
+      <div class="w-full lg:w-1/2 bg-blanco border border-borde rounded-2xl shadow-sm overflow-hidden flex flex-col h-[28rem]">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-borde shrink-0">
           <h2 class="font-titulos text-lg font-bold">Últimos movimientos</h2>
           <a [routerLink]="['/movimientos', token]"
             class="text-sm font-medium text-blue-600 underline cursor-pointer">Ver todos</a>
         </div>
 
-        <table class="w-full text-sm text-left">
-          <thead class="text-texto/60 border-b border-borde">
-            <tr>
-              <th class="px-6 py-3 font-medium">Descripción</th>
-              <th class="px-4 py-3 font-medium">Tipo</th>
-              <th class="px-4 py-3 font-medium">Fecha</th>
-              <th class="px-6 py-3 font-medium text-right">Cantidad</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (m of ultimosMovimientos(); track $index){
-              <tr class="border-b border-borde/50 last:border-0">
-                <!-- Descripción: sólida hasta 15 caracteres y luego se desvanece -->
-                <td class="px-6 py-3">
-                  <span class="block max-w-[17ch] overflow-hidden whitespace-nowrap align-bottom
-                    [mask-image:linear-gradient(to_right,#000_15ch,transparent_17ch)]
-                    [-webkit-mask-image:linear-gradient(to_right,#000_15ch,transparent_17ch)]"
-                    [title]="m.descripcion">{{ m.descripcion }}</span>
-                </td>
-                <!-- Tipo: sólido hasta 12 caracteres y luego se desvanece -->
-                <td class="px-4 py-3">
-                  <span class="block max-w-[14ch] overflow-hidden whitespace-nowrap align-bottom
-                    [mask-image:linear-gradient(to_right,#000_12ch,transparent_14ch)]
-                    [-webkit-mask-image:linear-gradient(to_right,#000_12ch,transparent_14ch)]"
-                    [title]="m.tipo">{{ m.tipo }}</span>
-                </td>
-                <td class="px-4 py-3">{{ m.fechaMovimiento | date:"dd/MM/yyyy" }}</td>
-                <!-- Cantidad: rojo si es gasto (S), verde si es ingreso (N) -->
-                <td class="px-6 py-3 text-right font-semibold whitespace-nowrap"
-                  [class.text-peligro]="m.gasto === 'S'"
-                  [class.text-verde]="m.gasto === 'N'">
-                  {{ m.gasto === 'S' ? '-' : '+' }}{{ m.cantidad | number:"1.2-2" }} €
-                </td>
-              </tr>
-            } @empty {
-              <tr>
-                <td colspan="4" class="px-6 py-6 text-center text-texto/50">No hay movimientos todavía</td>
-              </tr>
+        <!-- Cabecera de columnas -->
+        <div class="grid grid-cols-[1fr_1fr_auto_auto] text-texto/60 text-sm font-medium border-b border-borde px-6 py-3 shrink-0">
+          <span>Descripción</span>
+          <span>Tipo</span>
+          <span class="px-4">Fecha</span>
+          <span class="text-right pl-4">Cantidad</span>
+        </div>
+        <!-- Filas de movimientos: flex-1 + justify-between para repartir el espacio verticalmente -->
+        <div class="flex-1 flex flex-col justify-between px-6 py-2">
+          @for (m of ultimosMovimientos(); track $index){
+            <div class="grid grid-cols-[1fr_1fr_auto_auto] items-center text-sm border-b border-borde/50 last:border-0 py-2">
+              <span class="block max-w-[17ch] overflow-hidden whitespace-nowrap
+                [mask-image:linear-gradient(to_right,#000_15ch,transparent_17ch)]
+                [-webkit-mask-image:linear-gradient(to_right,#000_15ch,transparent_17ch)]"
+                [title]="m.descripcion">{{ m.descripcion }}</span>
+              <span class="block max-w-[14ch] overflow-hidden whitespace-nowrap
+                [mask-image:linear-gradient(to_right,#000_12ch,transparent_14ch)]
+                [-webkit-mask-image:linear-gradient(to_right,#000_12ch,transparent_14ch)]"
+                [title]="m.tipo">{{ m.tipo }}</span>
+              <span class="px-4 whitespace-nowrap">{{ m.fechaMovimiento | date:"dd/MM/yyyy" }}</span>
+              <span class="text-right font-semibold whitespace-nowrap pl-4"
+                [class.text-peligro]="m.gasto === 'S'"
+                [class.text-verde]="m.gasto === 'N'">
+                {{ m.gasto === 'S' ? '-' : '+' }}{{ m.cantidad | number:"1.2-2" }} €
+              </span>
+            </div>
+          } @empty {
+            <p class="text-center text-texto/50 py-6">No hay movimientos todavía</p>
+          }
+        </div>
+      </div>
+
+      <!-- Chat FinBot: asistente de finanzas, a la derecha de Últimos movimientos -->
+      <div class="w-full lg:w-1/2 bg-blanco border border-borde rounded-2xl shadow-sm overflow-hidden flex flex-col h-[28rem]">
+        <div class="flex items-center gap-2 px-6 py-4 border-b border-borde">
+          <span class="w-8 h-8 rounded-full bg-verde/15 text-verde flex items-center justify-center relative -top-2">
+            <i class="bi bi-robot"></i>
+          </span>
+          <h2 class="font-titulos text-lg font-bold">FinBot</h2>
+        </div>
+
+        <!-- Zona de mensajes con scroll propio -->
+        <div #chatScroll class="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
+          @for (m of chatMensajes(); track $index){
+            @if (m.rol === "model"){
+              <div class="self-start max-w-[85%] bg-fondo rounded-2xl rounded-tl-sm px-4 py-2 text-sm whitespace-pre-line">{{ m.texto }}</div>
+            }@else{
+              <div class="self-end max-w-[85%] bg-verde text-blanco rounded-2xl rounded-tr-sm px-4 py-2 text-sm whitespace-pre-line">{{ m.texto }}</div>
             }
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Estadísticas: tarjeta que enlaza a la pantalla de gráficas, con el mismo hover que las tarjetas de usuarios -->
-      <a [routerLink]="['/estadisticas', token]"
-        class="enlace-limpio w-full lg:w-1/2 bg-blanco border border-borde rounded-2xl shadow-sm overflow-hidden transition-colors hover:bg-fondo/40 cursor-pointer flex flex-col">
-        <div class="px-6 py-4 border-b border-borde flex items-center justify-between">
-          <h2 class="font-titulos text-lg font-bold">Estadísticas</h2>
-          <i class="bi bi-chevron-right text-texto"></i>
+          }
+          @if (chatCargando()){
+            <div class="self-start bg-fondo rounded-2xl rounded-tl-sm px-4 py-2 text-sm text-texto/50">FinBot está escribiendo...</div>
+          }
         </div>
 
-        <div class="px-6 py-4 flex-1 flex items-center">
-          <svg viewBox="0 0 480 220" class="w-full h-auto" role="img" aria-label="Gráfica lineal del balance de los últimos 6 meses">
-            <!-- Líneas horizontales de referencia -->
-            <g stroke="var(--color-borde)" stroke-width="1">
-              <line x1="40" y1="20"  x2="470" y2="20" />
-              <line x1="40" y1="60"  x2="470" y2="60" />
-              <line x1="40" y1="100" x2="470" y2="100" />
-              <line x1="40" y1="140" x2="470" y2="140" />
-              <line x1="40" y1="180" x2="470" y2="180" />
-            </g>
-
-            <!-- Etiquetas del eje Y -->
-            <g fill="currentColor" opacity="0.5" font-size="10" text-anchor="end">
-              <text x="34" y="23">2000</text>
-              <text x="34" y="63">1500</text>
-              <text x="34" y="103">1000</text>
-              <text x="34" y="143">500</text>
-              <text x="34" y="183">0</text>
-            </g>
-
-            <!-- Área bajo la línea -->
-            <path d="M 55 130 L 130 90 L 205 115 L 280 60 L 355 80 L 445 40 L 445 180 L 55 180 Z"
-              fill="var(--color-verde)" opacity="0.12" />
-
-            <!-- Línea del balance -->
-            <path d="M 55 130 L 130 90 L 205 115 L 280 60 L 355 80 L 445 40"
-              fill="none" stroke="var(--color-verde)" stroke-width="2.5"
-              stroke-linecap="round" stroke-linejoin="round" />
-
-            <!-- Puntos -->
-            <g fill="var(--color-verde)">
-              <circle cx="55"  cy="130" r="4" />
-              <circle cx="130" cy="90"  r="4" />
-              <circle cx="205" cy="115" r="4" />
-              <circle cx="280" cy="60"  r="4" />
-              <circle cx="355" cy="80"  r="4" />
-              <circle cx="445" cy="40"  r="4" />
-            </g>
-
-            <!-- Etiquetas del eje X (meses) -->
-            <g fill="currentColor" opacity="0.5" font-size="10" text-anchor="middle">
-              <text x="55"  y="200">Feb</text>
-              <text x="130" y="200">Mar</text>
-              <text x="205" y="200">Abr</text>
-              <text x="280" y="200">May</text>
-              <text x="355" y="200">Jun</text>
-              <text x="445" y="200">Jul</text>
-            </g>
-          </svg>
-        </div>
-      </a>
+        <!-- Caja de escritura -->
+        <form (ngSubmit)="enviarChat()" class="border-t border-borde p-3 flex gap-2">
+          <input name="chatInput" [(ngModel)]="chatInput" [disabled]="chatCargando()" autocomplete="off"
+            placeholder="Pregúntame sobre tus finanzas..."
+            class="flex-1 bg-fondo border border-borde rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-boton disabled:opacity-50" />
+          <button type="submit" [disabled]="chatCargando() || !chatInput.trim()"
+            class="w-10 h-10 shrink-0 rounded-xl bg-boton text-blanco flex items-center justify-center transition-colors hover:bg-boton/80 disabled:opacity-50 cursor-pointer">
+            <i class="bi bi-send-fill"></i>
+          </button>
+        </form>
+      </div>
       </div>
 
-      <!-- Fila inferior: acciones de movimientos a la izquierda, botón Metas a la derecha -->
+      <!-- Botones y Metas en la misma fila -->
       <div class="flex flex-col lg:flex-row gap-6 items-stretch">
-        <!-- Botones para añadir ingreso o gasto, debajo de la tabla de últimos movimientos -->
         <div class="w-full lg:w-1/2 flex gap-4">
           <button type="button" (click)="abrirModalMovimiento('N')"
             class="boton-tarjeta flex-1 bg-verde text-blanco shadow-sm px-4 py-3 flex items-center justify-center gap-2 font-titulos text-base font-bold transition-colors hover:bg-verde/80 cursor-pointer">
@@ -177,8 +139,6 @@
             Añadir gasto
           </button>
         </div>
-
-        <!-- Tarjeta-botón "Metas": movida a la derecha, bajo las estadísticas -->
         <a [routerLink]="['/metas', token]"
           class="enlace-limpio w-full lg:w-1/2 bg-blanco border border-borde rounded-2xl shadow-sm px-4 py-3 flex items-center justify-between transition-colors hover:bg-fondo/40 cursor-pointer">
           <span class="flex items-center gap-2 text-texto">
@@ -186,6 +146,88 @@
             <span class="font-titulos text-base font-bold">Metas</span>
           </span>
           <i class="bi bi-chevron-right text-texto"></i>
+        </a>
+      </div>
+
+      <!-- Bolsa y Estadísticas a ancho completo en la misma fila -->
+      <div class="flex flex-col lg:flex-row gap-6 items-stretch">
+        <!-- Tarjeta "Bolsa" -->
+        <div class="flex-1 bg-blanco border border-borde rounded-2xl shadow-sm overflow-hidden flex flex-col">
+          <div class="flex items-center px-6 py-4 border-b border-borde">
+            <h2 class="font-titulos text-lg font-bold flex items-center gap-2">
+              <i class="bi bi-graph-up-arrow"></i>
+              Bolsa
+            </h2>
+          </div>
+          <div class="px-6 flex flex-col flex-1 justify-around">
+            @if (bolsaCargando()){
+              <p class="py-4 text-sm text-texto/50 text-center">Cargando cotizaciones...</p>
+            }@else{
+              @for (c of bolsa(); track c.simbolo){
+                <div class="flex items-center justify-between py-3 border-b border-borde/50 last:border-0">
+                  <span class="text-sm font-medium">{{ c.nombre }}</span>
+                  <span class="flex items-baseline gap-4">
+                    <span class="text-sm font-semibold whitespace-nowrap">{{ c.precio | number:"1.2-2" }} {{ simboloMoneda(c.moneda) }}</span>
+                    <span class="text-sm font-semibold w-20 text-right whitespace-nowrap"
+                      [class.text-verde]="c.variacion >= 0"
+                      [class.text-peligro]="c.variacion < 0">
+                      {{ c.variacion >= 0 ? "+" : "" }}{{ c.variacion | number:"1.2-2" }} %
+                    </span>
+                  </span>
+                </div>
+              }@empty{
+                <p class="py-4 text-sm text-texto/50 text-center">Cotizaciones no disponibles ahora mismo</p>
+              }
+            }
+          </div>
+        </div>
+
+        <!-- Estadísticas: misma altura que Bolsa -->
+        <a [routerLink]="['/estadisticas', token]"
+          class="enlace-limpio flex-1 bg-blanco border border-borde rounded-2xl shadow-sm overflow-hidden transition-colors hover:bg-fondo/40 cursor-pointer flex flex-col">
+          <div class="px-6 py-4 border-b border-borde flex items-center justify-between">
+            <h2 class="font-titulos text-lg font-bold">Estadísticas</h2>
+            <i class="bi bi-chevron-right text-texto"></i>
+          </div>
+          <div class="px-6 py-4 flex-1 flex items-center">
+            <svg viewBox="0 0 480 220" class="w-full h-auto" role="img" aria-label="Gráfica lineal del balance de los últimos 6 meses">
+              <g stroke="var(--color-borde)" stroke-width="1">
+                <line x1="40" y1="20"  x2="470" y2="20" />
+                <line x1="40" y1="60"  x2="470" y2="60" />
+                <line x1="40" y1="100" x2="470" y2="100" />
+                <line x1="40" y1="140" x2="470" y2="140" />
+                <line x1="40" y1="180" x2="470" y2="180" />
+              </g>
+              <g fill="currentColor" opacity="0.5" font-size="10" text-anchor="end">
+                <text x="34" y="23">2000</text>
+                <text x="34" y="63">1500</text>
+                <text x="34" y="103">1000</text>
+                <text x="34" y="143">500</text>
+                <text x="34" y="183">0</text>
+              </g>
+              <path d="M 55 130 L 130 90 L 205 115 L 280 60 L 355 80 L 445 40 L 445 180 L 55 180 Z"
+                fill="var(--color-verde)" opacity="0.12" />
+              <path d="M 55 130 L 130 90 L 205 115 L 280 60 L 355 80 L 445 40"
+                fill="none" stroke="var(--color-verde)" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round" />
+              <g fill="var(--color-verde)">
+                <circle cx="55"  cy="130" r="4" />
+                <circle cx="130" cy="90"  r="4" />
+                <circle cx="205" cy="115" r="4" />
+                <circle cx="280" cy="60"  r="4" />
+                <circle cx="355" cy="80"  r="4" />
+                <circle cx="445" cy="40"  r="4" />
+              </g>
+              <g fill="currentColor" opacity="0.5" font-size="10" text-anchor="middle">
+                <text x="55"  y="200">Feb</text>
+                <text x="130" y="200">Mar</text>
+                <text x="205" y="200">Abr</text>
+                <text x="280" y="200">May</text>
+                <text x="355" y="200">Jun</text>
+                <text x="445" y="200">Jul</text>
+              </g>
+            </svg>
+          </div>
         </a>
       </div>
       </div>

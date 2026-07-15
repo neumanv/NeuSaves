@@ -14,19 +14,19 @@
     <div class="flex flex-wrap justify-center gap-6 w-full max-w-5xl">
       <!-- Usuario principal -->
       @if (usuarioLogeado(); as yo){
-        <div role="button" tabindex="0" data-accion="ver-principal" (keydown.enter)="verUsuario(yo)" class="relative bg-blanco p-6 rounded-2xl border-2 border-verde shadow-sm text-center w-64 flex flex-col items-center justify-center cursor-pointer transition-colors tarjeta-usuario">
+        <div role="button" tabindex="0" data-accion="ver-principal" (keydown.enter)="verUsuario(yo)" class="relative bg-blanco p-6 rounded-2xl border-2 border-verde shadow-sm text-center w-64 min-h-52 flex flex-col items-center justify-center cursor-pointer transition-colors tarjeta-usuario">
           <span class="absolute top-3 left-3 text-[10px] font-semibold uppercase tracking-wider bg-verde text-blanco rounded-full px-2 py-0.5">Principal</span>
           <div class="mx-auto w-16 h-16 bg-fondo rounded-full flex items-center justify-center mb-4 border border-verde">
             <i class="bi bi-person-check-fill" style="font-size: 2rem;"></i>
           </div>
-          <h1 class="font-titulos text-xl font-bold">
-           {{ yo.nombre }} {{ yo.apellido1 }} {{ yo.apellido2 ? ' ' + yo.apellido2 : ''}}
+          <h1 class="font-titulos text-xl font-bold line-clamp-2 break-words w-full" [title]="yo.nombre + ' ' + yo.apellido1">
+           {{ yo.nombre }} {{ yo.apellido1 }}
           </h1>
         </div>
       }
 
       @for (usuario of usuarios(); track usuario.idUsuario){
-        <div role="button" tabindex="0" data-accion="ver-usuario" [attr.data-id]="usuario.idUsuario" (keydown.enter)="verUsuario(usuario)" class="relative bg-blanco p-6 rounded-2xl border border-borde shadow-sm text-center w-64 flex flex-col items-center justify-center cursor-pointer transition-colors tarjeta-usuario">
+        <div role="button" tabindex="0" data-accion="ver-usuario" [attr.data-id]="usuario.idUsuario" (keydown.enter)="verUsuario(usuario)" class="relative bg-blanco p-6 rounded-2xl border border-borde shadow-sm text-center w-64 min-h-52 flex flex-col items-center justify-center cursor-pointer transition-colors tarjeta-usuario">
           <button type="button" data-accion="borrar-usuario" [attr.data-id]="usuario.idUsuario" title="Borrar usuario" id="borrar_usuario" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full border border-peligro text-peligro hover:bg-peligro hover:text-texto transition-colors cursor-pointer">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -35,8 +35,8 @@
           <div class="mx-auto w-16 h-16 bg-fondo rounded-full flex items-center justify-center mb-4 border border-borde">
             <i class="bi bi-person-fill" style="font-size: 2rem;"></i>
           </div>
-          <h1 class="font-titulos text-xl font-bold">
-           {{ usuario.nombre }} {{ usuario.apellido1 }} {{ usuario.apellido2 ? ' ' + usuario.apellido2 : ''}}
+          <h1 class="font-titulos text-xl font-bold line-clamp-2 break-words w-full" [title]="usuario.nombre + ' ' + usuario.apellido1">
+           {{ usuario.nombre }} {{ usuario.apellido1 }}
           </h1>
         </div>
       }

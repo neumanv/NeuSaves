@@ -1,1 +1,4 @@
 .claude/
+
+# Variables de entorno con secretos (clave de Gemini, etc.)
+.env

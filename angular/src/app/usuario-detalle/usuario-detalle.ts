@@ -1,4 +1,4 @@
-import{ Component, OnInit, Inject, PLATFORM_ID, signal, computed } from "@angular/core";
+import{ Component, OnInit, Inject, PLATFORM_ID, signal, computed, ViewChild, ElementRef } from "@angular/core";
 import{ HttpClient } from "@angular/common/http";
 import{ CommonModule, isPlatformBrowser } from "@angular/common";
 import{ FormsModule } from "@angular/forms";
@@ -6,6 +6,7 @@ import{ ActivatedRoute, RouterLink } from "@angular/router";
 import{ Header } from "../header/header";
 import{ FooterComponent } from "../footer/footer";
 import{ descifrarId } from "../cifrado";
+import{ Auth, UsuarioSesion } from "../auth";
 
 interface Usuario{
   idUsuario: number;
@@ -41,6 +42,25 @@ interface Periodo{
   periodo: string;
 }
 
+//Cotización de un índice/valor para la tarjeta "Bolsa"
+interface CotizacionBolsa{
+  nombre: string;
+  simbolo: string;
+  precio: number;
+  variacion: number;
+  moneda: string;
+}
+
+//Mensaje del chat FinBot: "user" (el usuario) o "model" (el asistente)
+interface MensajeChat{
+  rol: "user" | "model";
+  texto: string;
+}
+
+interface ChatResponse{
+  respuesta: string;
+}
+
 @Component({
   selector: "app-usuario-detalle",
   standalone: true,
@@ -52,6 +72,8 @@ export class UsuarioDetalle implements OnInit{
   private readonly movimientosUrl = "http://localhost:8080/api/movimientos-usuarios";
   private readonly tiposUrl = "http://localhost:8080/api/movimientos";
   private readonly periodosUrl = "http://localhost:8080/api/periodos";
+  private readonly bolsaUrl = "http://localhost:8080/api/bolsa";
+  private readonly chatUrl = "http://localhost:8080/api/chat";
 
   //Token cifrado del usuario en la URL, reutilizado para enlazar a sus metas
   token = "";
@@ -64,6 +86,18 @@ export class UsuarioDetalle implements OnInit{
   gastosMes = signal(0);
   //Últimos 5 movimientos del usuario para la tabla
   ultimosMovimientos = signal<UltimoMovimiento[]>([]);
+  //Cotizaciones para la tarjeta "Bolsa" (índices, divisa y Bitcoin)
+  bolsa = signal<CotizacionBolsa[]>([]);
+  bolsaCargando = signal(true);
+
+  //--- Chat FinBot ---
+  @ViewChild("chatScroll") private chatScroll?: ElementRef<HTMLDivElement>;
+  //El primer mensaje (bienvenida) es solo para mostrar; no se envía como historial
+  chatMensajes = signal<MensajeChat[]>([
+    { rol: "model", texto: "¡Hola! Soy FinBot 🐷. Puedo ayudarte a entender tus finanzas, organizar tu presupuesto y darte consejos de ahorro. ¿Qué quieres saber?" }
+  ]);
+  chatInput = "";
+  chatCargando = signal(false);
   saldoTexto = computed(() => this.saldo().toFixed(2));
 
   //--- Modal "Añadir ingreso" / "Añadir gasto" ---
@@ -117,6 +151,15 @@ export class UsuarioDetalle implements OnInit{
     return this.iconosTipo[tipo] ?? "bi-cash-coin";
   }
 
+  //Símbolo de la moneda para la tarjeta "Bolsa"
+  simboloMoneda(moneda: string): string{
+    switch (moneda){
+      case "EUR": return "€";
+      case "USD": return "$";
+      default: return moneda;
+    }
+  }
+
   ingresosTexto = computed(() => this.ingresosMes().toFixed(2));
   gastosTexto = computed(() => this.gastosMes().toFixed(2));
 
@@ -145,7 +188,7 @@ export class UsuarioDetalle implements OnInit{
     return "Buenas noches";
   }
 
-  constructor(private http: HttpClient, private ruta: ActivatedRoute, @Inject(PLATFORM_ID) private platformId: Object){}
+  constructor(private http: HttpClient, private ruta: ActivatedRoute, private auth: Auth, @Inject(PLATFORM_ID) private platformId: Object){}
 
   ngOnInit(): void{
     if (!isPlatformBrowser(this.platformId)){
@@ -155,6 +198,8 @@ export class UsuarioDetalle implements OnInit{
     const estado = history.state as{ usuario?: Usuario };
     if (estado?.usuario){
       this.usuario.set(estado.usuario);
+      //Este es ahora el usuario que se gestiona (para "Editar perfil" del menú)
+      this.auth.activarUsuario(estado.usuario as unknown as UsuarioSesion);
     }
 
     this.token = this.ruta.snapshot.paramMap.get("token") ?? "";
@@ -169,6 +214,8 @@ export class UsuarioDetalle implements OnInit{
         const encontrado = usuarios.find((u) => u.idUsuario === id);
         if (encontrado){
           this.usuario.set(encontrado);
+          //Datos completos del backend (incluye idUsuarioPrincipal): fija bien el usuario activo
+          this.auth.activarUsuario(encontrado as unknown as UsuarioSesion);
         }
       },
       error: (err) => console.error("Error al cargar el usuario:", err)
@@ -189,6 +236,18 @@ export class UsuarioDetalle implements OnInit{
     this.http.get<Periodo[]>(this.periodosUrl).subscribe({
       next: (periodos) => this.periodos.set(periodos ?? []),
       error: (err) => console.error("Error al cargar los periodos:", err)
+    });
+
+    //Cotizaciones de bolsa (el backend las cachea, no se recargan al añadir movimientos)
+    this.http.get<CotizacionBolsa[]>(this.bolsaUrl).subscribe({
+      next: (cotizaciones) =>{
+        this.bolsa.set(cotizaciones ?? []);
+        this.bolsaCargando.set(false);
+      },
+      error: (err) =>{
+        console.error("Error al cargar la bolsa:", err);
+        this.bolsaCargando.set(false);
+      }
     });
 
     this.cargarDatos(id);
@@ -406,5 +465,63 @@ export class UsuarioDetalle implements OnInit{
         console.error(`Error al añadir el ${nombre}:`, err);
       }
     });
+  }
+
+  //--- Chat FinBot ---
+  //Resumen económico que se envía a FinBot para que hable de los datos reales del usuario
+  private contextoFinanciero(){
+    return{
+      nombre: this.usuario()?.nombre ?? null,
+      saldo: this.saldo(),
+      ingresosMes: this.ingresosMes(),
+      gastosMes: this.gastosMes(),
+      movimientosMes: this.movimientosMes(),
+      movimientosRecientes: this.ultimosMovimientos().map((m) =>
+        `${m.tipo}: ${m.gasto === "S" ? "-" : "+"}${m.cantidad.toFixed(2)} € (${m.descripcion})`
+      )
+    };
+  }
+
+  enviarChat(): void{
+    const texto = this.chatInput.trim();
+    if (!texto || this.chatCargando()){
+      return;
+    }
+
+    //Historial previo (sin el mensaje de bienvenida inicial) para que Gemini mantenga el contexto
+    const historial = this.chatMensajes().slice(1).map((m) => ({ rol: m.rol, texto: m.texto }));
+
+    this.chatMensajes.update((lista) => [...lista, { rol: "user", texto }]);
+    this.chatInput = "";
+    this.chatCargando.set(true);
+    this.desplazarChat();
+
+    this.http.post<ChatResponse>(this.chatUrl, {
+      mensaje: texto,
+      historial,
+      contexto: this.contextoFinanciero()
+    }).subscribe({
+      next: (res) =>{
+        this.chatMensajes.update((lista) => [...lista, { rol: "model", texto: res.respuesta }]);
+        this.chatCargando.set(false);
+        this.desplazarChat();
+      },
+      error: (err) =>{
+        console.error("Error en el chat:", err);
+        this.chatMensajes.update((lista) => [...lista, { rol: "model", texto: "Ahora mismo no puedo responder. Inténtalo de nuevo en un momento." }]);
+        this.chatCargando.set(false);
+        this.desplazarChat();
+      }
+    });
+  }
+
+  //Baja el scroll del chat al último mensaje tras pintar la vista
+  private desplazarChat(): void{
+    setTimeout(() =>{
+      const el = this.chatScroll?.nativeElement;
+      if (el){
+        el.scrollTop = el.scrollHeight;
+      }
+    }, 50);
   }
 }

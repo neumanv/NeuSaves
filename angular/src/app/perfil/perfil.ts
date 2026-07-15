@@ -64,6 +64,11 @@ export class Perfil implements OnInit{
 
   pestana = signal<Pestana>("datos");
 
+  //Usuario que se está editando: el subusuario activo o, si no hay, el principal
+  private usuarioEditando: UsuarioSesion | null = null;
+  //Un subusuario solo tiene nombre, apellidos y sexo (ni email, ni DNI, ni teléfono, ni contraseña)
+  esSubusuario = signal(false);
+
   //--- Pestaña de datos ---
   datos: DatosPerfil = this.datosVacios();
   sexoElegido = signal("M");
@@ -119,12 +124,47 @@ export class Perfil implements OnInit{
     if (!isPlatformBrowser(this.platformId)){
       return;
     }
-    const usuario = this.auth.usuario();
+    //El usuario a editar es el subusuario cuyo panel se está viendo o, si no hay, el principal
+    const usuario = this.auth.usuarioEnGestion();
     if (!usuario){
       this.router.navigate(["/"]);
       return;
     }
-    //Rellena el formulario con los datos de la sesión
+    this.usuarioEditando = usuario;
+    this.esSubusuario.set(usuario.idUsuarioPrincipal != null);
+    this.rellenarDatos(usuario);
+
+    //Trae los datos completos del backend (incluye idUsuarioPrincipal) por si en sesión venían parciales
+    this.http.get<UsuarioSesion>(`${this.usuariosUrl}/${usuario.idUsuario}`).subscribe({
+      next: (completo) =>{
+        if (completo){
+          this.usuarioEditando = completo;
+          this.esSubusuario.set(completo.idUsuarioPrincipal != null);
+          this.rellenarDatos(completo);
+        }
+      },
+      error: (err) => console.error("Error al cargar los datos del usuario:", err)
+    });
+
+    this.cargarPeriodicos();
+
+    //Catálogo de periodos para el desplegable de periodicidad
+    this.http.get<Periodo[]>(this.periodosUrl).subscribe({
+      next: (periodos) => this.periodos.set(periodos ?? []),
+      error: (err) => console.error("Error al cargar los periodos:", err)
+    });
+  }
+
+  cambiarPestana(pestana: Pestana): void{
+    //Un subusuario no tiene contraseña propia, así que esa pestaña no existe para él
+    if (pestana === "contrasena" && this.esSubusuario()){
+      return;
+    }
+    this.pestana.set(pestana);
+  }
+
+  //Vuelca los datos del usuario en el formulario
+  private rellenarDatos(usuario: UsuarioSesion): void{
     this.datos ={
       email: usuario.email ?? "",
       nombre: usuario.nombre ?? "",
@@ -138,22 +178,11 @@ export class Perfil implements OnInit{
     };
     this.sexoElegido.set(this.datos.sexo);
     this.paisSeleccionado.set(this.prefijos.find((p) => p.phoneCode === this.datos.prefijo) ?? null);
-    this.cargarPeriodicos();
-
-    //Catálogo de periodos para el desplegable de periodicidad
-    this.http.get<Periodo[]>(this.periodosUrl).subscribe({
-      next: (periodos) => this.periodos.set(periodos ?? []),
-      error: (err) => console.error("Error al cargar los periodos:", err)
-    });
-  }
-
-  cambiarPestana(pestana: Pestana): void{
-    this.pestana.set(pestana);
   }
 
   //--- Movimientos periódicos ---
   private cargarPeriodicos(): void{
-    const usuario = this.auth.usuario();
+    const usuario = this.usuarioEditando;
     if (!usuario){
       return;
     }
@@ -222,7 +251,7 @@ export class Perfil implements OnInit{
   }
 
   guardarPeriodico(): void{
-    const usuario = this.auth.usuario();
+    const usuario = this.usuarioEditando;
     const m = this.editandoPeriodico();
     const periodo = this.periodos().find((p) => p.periodo === this.periodoEdit);
     if (!usuario || !m || !periodo){
@@ -260,7 +289,7 @@ export class Perfil implements OnInit{
   }
 
   eliminarPeriodico(): void{
-    const usuario = this.auth.usuario();
+    const usuario = this.usuarioEditando;
     const m = this.eliminandoPeriodico();
     if (!usuario || !m){
       return;
@@ -296,6 +325,12 @@ export class Perfil implements OnInit{
   guardarDatos(): void{
     const d = this.datos;
     this.avisoDatos.set(null);
+
+    //Un subusuario solo edita nombre, apellidos y sexo
+    if (this.esSubusuario()){
+      this.guardarDatosSubusuario();
+      return;
+    }
 
     if (!d.email.trim() || !d.nombre.trim() || !d.apellido1.trim() || !d.prefijo || !d.telefono1.trim() || !d.dni.trim()){
       this.errorDatos.set("El email, el nombre, el primer apellido, el prefijo, el teléfono 1 y el DNI son obligatorios.");
@@ -349,8 +384,14 @@ export class Perfil implements OnInit{
     this.http.put<UsuarioSesion>(`${this.usuariosUrl}/${usuario.idUsuario}`, payload).subscribe({
       next: (actualizado) =>{
         this.guardando.set(false);
+        const fusion = { ...usuario, ...actualizado };
         //Actualiza la sesión para que el resto de la app vea los datos nuevos
-        this.auth.iniciarSesion({ ...usuario, ...actualizado });
+        this.auth.iniciarSesion(fusion);
+        this.usuarioEditando = fusion;
+        //Si el principal también era el usuario activo, mantenlo al día
+        if (this.auth.usuarioActivo()){
+          this.auth.activarUsuario(fusion);
+        }
         this.avisoDatos.set("Datos guardados correctamente.");
       },
       error: (err: HttpErrorResponse) =>{
@@ -358,6 +399,48 @@ export class Perfil implements OnInit{
         if (err.status === 409){
           this.errorDatos.set("El email ya está registrado por otro usuario.");
         }else if (err.status === 400){
+          this.errorDatos.set("No se pudieron guardar los datos. Revísalos.");
+        }else{
+          this.errorDatos.set("Conexión fallida");
+        }
+      }
+    });
+  }
+
+  //Guardado de un subusuario: solo nombre, apellidos y sexo
+  private guardarDatosSubusuario(): void{
+    const d = this.datos;
+    const usuario = this.usuarioEditando;
+    if (!usuario){
+      return;
+    }
+
+    if (!d.nombre.trim() || !d.apellido1.trim()){
+      this.errorDatos.set("El nombre y el primer apellido son obligatorios.");
+      return;
+    }
+
+    const payload ={
+      nombre: d.nombre.trim(),
+      apellido1: d.apellido1.trim(),
+      apellido2: d.apellido2.trim() || null,
+      sexo: d.sexo
+    };
+
+    this.guardando.set(true);
+    this.errorDatos.set(null);
+    this.http.put<UsuarioSesion>(`${this.usuariosUrl}/${usuario.idUsuario}`, payload).subscribe({
+      next: (actualizado) =>{
+        this.guardando.set(false);
+        const fusion = { ...usuario, ...actualizado };
+        this.usuarioEditando = fusion;
+        //Mantiene al día el usuario activo (el subusuario que se está gestionando)
+        this.auth.activarUsuario(fusion);
+        this.avisoDatos.set("Datos guardados correctamente.");
+      },
+      error: (err: HttpErrorResponse) =>{
+        this.guardando.set(false);
+        if (err.status === 400){
           this.errorDatos.set("No se pudieron guardar los datos. Revísalos.");
         }else{
           this.errorDatos.set("Conexión fallida");

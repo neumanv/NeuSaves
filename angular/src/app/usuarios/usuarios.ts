@@ -112,6 +112,8 @@ export class Usuarios implements OnInit, AfterViewInit{
 
   ngOnInit(): void{
     if(isPlatformBrowser(this.platformId)){
+      //En la selección de perfiles se gestiona al usuario principal
+      this.auth.limpiarUsuarioActivo();
       this.cargarUsuarios();
     }
   }
