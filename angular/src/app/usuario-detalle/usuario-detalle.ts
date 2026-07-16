@@ -92,10 +92,11 @@ export class UsuarioDetalle implements OnInit{
 
   //--- Chat FinBot ---
   @ViewChild("chatScroll") private chatScroll?: ElementRef<HTMLDivElement>;
-  //El primer mensaje (bienvenida) es solo para mostrar; no se envía como historial
-  chatMensajes = signal<MensajeChat[]>([
-    { rol: "model", texto: "¡Hola! Soy FinBot 🐷. Puedo ayudarte a entender tus finanzas, organizar tu presupuesto y darte consejos de ahorro. ¿Qué quieres saber?" }
-  ]);
+  //Mensaje de bienvenida: es solo para mostrar (no se envía como historial ni se persiste)
+  private readonly mensajeBienvenida: MensajeChat = { rol: "model", texto: "¡Hola! Soy FinBot 🐷. Puedo ayudarte a entender tus finanzas, organizar tu presupuesto y darte consejos de ahorro. ¿Qué quieres saber?" };
+  //Nº de mensajes de la conversación que se guardan entre recargas (sin contar la bienvenida)
+  private readonly maxMensajesGuardados = 8;
+  chatMensajes = signal<MensajeChat[]>([{ rol: "model", texto: "¡Hola! Soy FinBot 🐷. Puedo ayudarte a entender tus finanzas, organizar tu presupuesto y darte consejos de ahorro. ¿Qué quieres saber?" }]);
   chatInput = "";
   chatCargando = signal(false);
   saldoTexto = computed(() => this.saldo().toFixed(2));
@@ -166,6 +167,25 @@ export class UsuarioDetalle implements OnInit{
   ahorradoMes = computed(() => this.ingresosMes() - this.gastosMes());
   ahorradoTexto = computed(() => this.ahorradoMes().toFixed(2));
 
+  //Tamaño de fuente común a todas las cantidades del panel: se calcula a partir del importe más largo
+  //de todos para que ninguno se parta en dos líneas y, a la vez, todas las tarjetas mantengan el
+  //mismo tamaño de número (no se reduce solo el largo dejando los demás grandes)
+  tamanoCantidad = computed(() =>{
+    const largo = Math.max(
+      this.saldoTexto().length,
+      ("+" + this.ingresosTexto()).length,
+      ("-" + this.gastosTexto()).length,
+      this.ahorradoTexto().length
+    );
+    if (largo >= 11){
+      return "text-2xl";
+    }
+    if (largo >= 9){
+      return "text-3xl";
+    }
+    return "text-4xl";
+  });
+
   ahorradoNivel = computed<"bajo" | "medio" | "alto">(() =>{
     const ahorrado = this.ahorradoMes();
     if (ahorrado <= 400){
@@ -208,6 +228,9 @@ export class UsuarioDetalle implements OnInit{
       return;
     }
     this.idActual.set(id);
+
+    //Recupera la última conversación con FinBot guardada para este usuario
+    this.restaurarChat(id);
 
     this.http.get<Usuario[]>(this.apiUrl).subscribe({
       next: (usuarios) =>{
@@ -494,6 +517,7 @@ export class UsuarioDetalle implements OnInit{
     this.chatMensajes.update((lista) => [...lista, { rol: "user", texto }]);
     this.chatInput = "";
     this.chatCargando.set(true);
+    this.guardarChat();
     this.desplazarChat();
 
     this.http.post<ChatResponse>(this.chatUrl, {
@@ -504,15 +528,57 @@ export class UsuarioDetalle implements OnInit{
       next: (res) =>{
         this.chatMensajes.update((lista) => [...lista, { rol: "model", texto: res.respuesta }]);
         this.chatCargando.set(false);
+        this.guardarChat();
         this.desplazarChat();
       },
       error: (err) =>{
         console.error("Error en el chat:", err);
         this.chatMensajes.update((lista) => [...lista, { rol: "model", texto: "Ahora mismo no puedo responder. Inténtalo de nuevo en un momento." }]);
         this.chatCargando.set(false);
+        this.guardarChat();
         this.desplazarChat();
       }
     });
+  }
+
+  //Clave de localStorage donde se guarda la conversación de FinBot de cada usuario
+  private claveChat(id: number): string{
+    return `finbot_chat_${id}`;
+  }
+
+  //Guarda los últimos mensajes de la conversación (sin la bienvenida) para este usuario
+  private guardarChat(): void{
+    const id = this.idActual();
+    if (id === null || !isPlatformBrowser(this.platformId)){
+      return;
+    }
+    //Se descarta la bienvenida (índice 0) y se conservan solo los últimos N mensajes
+    const conversacion = this.chatMensajes().slice(1).slice(-this.maxMensajesGuardados);
+    try{
+      localStorage.setItem(this.claveChat(id), JSON.stringify(conversacion));
+    }catch (err){
+      console.error("No se pudo guardar la conversación de FinBot:", err);
+    }
+  }
+
+  //Restaura la conversación guardada de este usuario, tras el mensaje de bienvenida
+  private restaurarChat(id: number): void{
+    if (!isPlatformBrowser(this.platformId)){
+      return;
+    }
+    try{
+      const guardado = localStorage.getItem(this.claveChat(id));
+      if (!guardado){
+        return;
+      }
+      const conversacion = JSON.parse(guardado) as MensajeChat[];
+      if (Array.isArray(conversacion) && conversacion.length > 0){
+        this.chatMensajes.set([this.mensajeBienvenida, ...conversacion.slice(-this.maxMensajesGuardados)]);
+        this.desplazarChat();
+      }
+    }catch (err){
+      console.error("No se pudo restaurar la conversación de FinBot:", err);
+    }
   }
 
   //Baja el scroll del chat al último mensaje tras pintar la vista

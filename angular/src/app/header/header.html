@@ -4,30 +4,39 @@
     <span class="font-titulos text-2xl font-bold text-texto">NeuSaves</span>
 
     @if (mostrarPerfil()){
-      <div class="relative ml-auto">
-        <button type="button" data-accion="abrir-menu" title="Perfil" id="perfil" class="w-10 h-10 rounded-full bg-fondo border border-borde flex items-center justify-center text-texto hover:bg-borde transition-colors cursor-pointer">
-          <i class="bi bi-person-fill" style="font-size: 1.25rem;"></i>
+      <div class="ml-auto flex items-center gap-3">
+        <!-- El modo diurno/nocturno solo se muestra con sesión iniciada, igual que el icono de perfil -->
+        <button type="button" data-accion="alternar-tema" id="alternar_tema"
+          [title]="tema.oscuro() ? 'Cambiar a modo diurno' : 'Cambiar a modo nocturno'"
+          class="w-10 h-10 rounded-full bg-fondo border border-borde flex items-center justify-center text-texto hover:bg-borde transition-colors cursor-pointer">
+          <i class="bi" [class.bi-sun-fill]="tema.oscuro()" [class.bi-moon-stars-fill]="!tema.oscuro()" style="font-size: 1.1rem;"></i>
         </button>
 
-        @if (menuAbierto()){
-          <div class="fixed inset-0 z-40" data-accion="cerrar-menu"></div>
-          <div class="absolute right-0 z-50 mt-1 w-44 bg-blanco border border-borde rounded-lg shadow-xl overflow-hidden">
-            @if (mostrarEditarPerfil()){
-              <button type="button" data-accion="editar-perfil" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-texto hover:bg-fondo transition-colors cursor-pointer">
-                Editar perfil
+        <div class="relative">
+          <button type="button" data-accion="abrir-menu" title="Perfil" id="perfil" class="w-10 h-10 rounded-full bg-fondo border border-borde flex items-center justify-center text-texto hover:bg-borde transition-colors cursor-pointer">
+            <i class="bi bi-person-fill" style="font-size: 1.25rem;"></i>
+          </button>
+
+          @if (menuAbierto()){
+            <div class="fixed inset-0 z-40" data-accion="cerrar-menu"></div>
+            <div class="absolute right-0 z-50 mt-1 w-44 bg-blanco border border-borde rounded-lg shadow-xl overflow-hidden">
+              @if (mostrarEditarPerfil()){
+                <button type="button" data-accion="editar-perfil" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-texto hover:bg-fondo transition-colors cursor-pointer">
+                  Editar perfil
+                </button>
+              }
+              @if (mostrarCambiarPerfil()){
+                <button type="button" data-accion="cambiar-perfil" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-texto hover:bg-fondo transition-colors cursor-pointer">
+                  Cambiar de perfil
+                </button>
+              }
+              <button type="button" data-accion="pedir-salir" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-peligro/80 hover:bg-peligro/10 transition-colors cursor-pointer">
+                <i class="bi bi-box-arrow-left"></i>
+                Cerrar sesión
               </button>
-            }
-            @if (mostrarCambiarPerfil()){
-              <button type="button" data-accion="cambiar-perfil" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-texto hover:bg-fondo transition-colors cursor-pointer">
-                Cambiar de perfil
-              </button>
-            }
-            <button type="button" data-accion="pedir-salir" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-peligro/80 hover:bg-peligro/10 transition-colors cursor-pointer">
-              <i class="bi bi-box-arrow-left"></i>
-              Cerrar sesión
-            </button>
-          </div>
-        }
+            </div>
+          }
+        </div>
       </div>
     }
   </div>

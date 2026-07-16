@@ -22,10 +22,31 @@ html{
   scrollbar-gutter: stable;
 }
 
+/*Modo nocturno: sobreescribe la misma paleta de --color-* que usan todas las utilidades de
+  Tailwind (bg-fondo, bg-blanco, text-texto, border-borde, text-boton...), así toda la app
+  cambia de tema sin tocar cada plantilla. Lo activa/desactiva el servicio Tema (tema.ts)*/
+:root[data-tema="oscuro"]{
+  --color-fondo: #1A1C1F;
+  --color-blanco: #24272B;
+  --color-borde: #383C41;
+  --color-texto: #F2F2F2;
+  --color-boton: #9A9FA6;
+}
+
 body{
   background-color: var(--color-fondo);
   color: var(--color-texto);
   font-family: var(--font-texto);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/*Bootstrap define ".border { border: ... !important }" con el shorthand completo, así que su
+  border-color (#dee2e6) gana siempre a la utilidad border-borde de Tailwind, sea cual sea la capa
+  o especificidad. En claro casi no se nota porque los grises son parecidos, pero en oscuro dejaba
+  todos los bordes claros y desentonaba. Hace falta !important para poder ganarle, y un selector de
+  atributo (no ".border-borde") para que Tailwind no fusione esta regla en su propia capa*/
+[class~="border-borde"]{
+  border-color: var(--color-borde) !important;
 }
 
 h1, h2, h3, h4, h5, h6{
@@ -47,7 +68,7 @@ h1, h2, h3, h4, h5, h6{
   width: 100%;
 }
 
-#perfil, #borrar_usuario, #ver_contrasena, #borrar_meta{
+#perfil, #borrar_usuario, #ver_contrasena, #borrar_meta, #alternar_tema, #enviar_chat{
   border-radius: 50%;
 }
 

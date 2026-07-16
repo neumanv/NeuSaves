@@ -215,6 +215,26 @@ export class Perfil implements OnInit{
     }
   }
 
+  //Icono de Bootstrap para cada tipo de movimiento (mismo mapa que en el panel de usuario)
+  private readonly iconosTipo: Record<string, string> = {
+    "Nómina": "bi-briefcase-fill",
+    "Beneficios de inversiones": "bi-graph-up-arrow",
+    "Regalos": "bi-gift-fill",
+    "Otros": "bi-cash-coin",
+    "Fijos": "bi-calendar3",
+    "Variables": "bi-list",
+    "Gastos de ocio": "bi-cup-straw",
+    "Comida y casa": "bi-house-fill",
+    "Hijos": "bi-backpack-fill",
+    "Transporte/vehículo": "bi-car-front-fill",
+    "Inversiones": "bi-bank",
+    "Imprevistos": "bi-patch-exclamation-fill",
+    "Otros gastos": "bi-cash-coin"
+  };
+  iconoTipo(tipo: string): string{
+    return this.iconosTipo[tipo] ?? "bi-cash-coin";
+  }
+
   //Días seleccionables en el modal según la periodicidad elegida (y el mes si es anual).
   //En mensual/2 meses el máximo es el 30 porque no todos los meses tienen día 31.
   get diasEditables(): number[]{

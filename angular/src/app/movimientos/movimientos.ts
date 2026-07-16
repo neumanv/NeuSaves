@@ -7,6 +7,11 @@ import{ Header } from "../header/header";
 import{ FooterComponent } from "../footer/footer";
 import{ descifrarId } from "../cifrado";
 
+interface Periodo{
+  idPeriodo: number;
+  periodo: string;
+}
+
 //Fila de la lista completa de movimientos
 interface MovimientoLista{
   descripcion: string;
@@ -40,9 +45,9 @@ interface PaginaMovimientos{
 export class Movimientos implements OnInit{
   private readonly movimientosUrl = "http://localhost:8080/api/movimientos-usuarios";
   private readonly tiposUrl = "http://localhost:8080/api/movimientos";
+  private readonly periodosUrl = "http://localhost:8080/api/periodos";
 
-  //Movimientos por página (debe coincidir con el valor por defecto del backend)
-  readonly TAMANO_PAGINA = 50;
+  readonly TAMANO_PAGINA = 30;
 
   //Token cifrado del usuario en la URL, reutilizado para volver a su panel
   token = "";
@@ -59,6 +64,27 @@ export class Movimientos implements OnInit{
 
   //Número de página que se muestra al usuario (empieza en 1)
   paginaVisible = computed(() => this.paginaActual() + 1);
+
+  //--- Modal "Añadir ingreso" / "Añadir gasto" ---
+  modalMovimiento = signal<"N" | "S" | null>(null);
+  esGasto = computed(() => this.modalMovimiento() === "S");
+  modalTipoAbierto = signal(false);
+  tipoSel = signal<TipoMovimiento | null>(null);
+  guardandoMovimiento = signal(false);
+  errorMovimiento = signal<string | null>(null);
+  nuevoMovimiento: { descripcion: string; cantidad: number | null; fechaFin: string } = { descripcion: "", cantidad: null, fechaFin: "" };
+  confirmacionMovimiento = signal(false);
+  private payloadPendiente: any = null;
+  periodos = signal<Periodo[]>([]);
+  esPeriodico = signal(false);
+  periodoAbierto = signal(false);
+  periodoSel = signal<Periodo | null>(null);
+
+  get manana(): string{
+    const fecha = new Date();
+    fecha.setDate(fecha.getDate() + 1);
+    return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, "0")}-${String(fecha.getDate()).padStart(2, "0")}`;
+  }
 
   //--- Filtros ---
   //Catálogo de tipos de ingreso y de gasto para el desplegable de tipo
@@ -90,6 +116,9 @@ export class Movimientos implements OnInit{
   });
   //Señal espejo de filtroGasto para que el computed de tipos reaccione al cambiarlo
   gastoSeleccionado = signal("");
+
+  //Tipos del modal según gasto/ingreso
+  tiposModal = computed(() => this.esGasto() ? this.tiposGasto() : this.tiposIngreso());
 
   //Icono de Bootstrap para cada tipo de movimiento (por nombre de tipo de la BD)
   private readonly iconosTipo: Record<string, string> = {
@@ -133,6 +162,10 @@ export class Movimientos implements OnInit{
     this.http.get<TipoMovimiento[]>(`${this.tiposUrl}?gasto=S`).subscribe({
       next: (tipos) => this.tiposGasto.set(tipos ?? []),
       error: (err) => console.error("Error al cargar los tipos de gasto:", err)
+    });
+    this.http.get<Periodo[]>(this.periodosUrl).subscribe({
+      next: (periodos) => this.periodos.set(periodos ?? []),
+      error: (err) => console.error("Error al cargar los periodos:", err)
     });
 
     this.cargarPagina(0);
@@ -268,5 +301,150 @@ export class Movimientos implements OnInit{
   hayFiltros(): boolean{
     return !!(this.filtroGasto || this.filtroTipo !== null || this.filtroDesde
       || this.filtroHasta || this.filtroMin !== null || this.filtroMax !== null);
+  }
+
+  //--- Modal "Añadir ingreso" / "Añadir gasto" ---
+  abrirModalMovimiento(gasto: "N" | "S"): void{
+    this.nuevoMovimiento = { descripcion: "", cantidad: null, fechaFin: "" };
+    this.tipoSel.set(null);
+    this.modalTipoAbierto.set(false);
+    this.esPeriodico.set(false);
+    this.periodoSel.set(null);
+    this.periodoAbierto.set(false);
+    this.errorMovimiento.set(null);
+    this.modalMovimiento.set(gasto);
+  }
+
+  cerrarModalMovimiento(): void{
+    this.modalMovimiento.set(null);
+    this.modalTipoAbierto.set(false);
+  }
+
+  toggleTipoModal(): void{
+    this.modalTipoAbierto.update((v) => !v);
+  }
+
+  cerrarTipoModal(): void{
+    this.modalTipoAbierto.set(false);
+  }
+
+  seleccionarTipo(tipo: TipoMovimiento): void{
+    this.tipoSel.set(tipo);
+    this.modalTipoAbierto.set(false);
+  }
+
+  togglePeriodico(): void{
+    this.esPeriodico.update((v) => !v);
+    if (!this.esPeriodico()){
+      this.periodoSel.set(null);
+      this.periodoAbierto.set(false);
+      this.nuevoMovimiento.fechaFin = "";
+    }
+  }
+
+  togglePeriodo(): void{
+    this.periodoAbierto.update((v) => !v);
+  }
+
+  cerrarPeriodo(): void{
+    this.periodoAbierto.set(false);
+  }
+
+  seleccionarPeriodo(periodo: Periodo): void{
+    this.periodoSel.set(periodo);
+    this.periodoAbierto.set(false);
+  }
+
+  limitarDescripcion(event: Event): void{
+    const textarea = event.target as HTMLTextAreaElement;
+    if (textarea.value.length > 100){
+      this.nuevoMovimiento.descripcion = textarea.value.substring(0, 100);
+      textarea.value = this.nuevoMovimiento.descripcion;
+    }
+  }
+
+  limitarCantidad(event: Event): void{
+    const input = event.target as HTMLInputElement;
+    let valor = input.value.replace(/[^\d.]/g, "");
+    if (valor.length > 9){ valor = valor.substring(0, 9); }
+    if (valor){
+      const num = parseFloat(valor);
+      this.nuevoMovimiento.cantidad = isNaN(num) ? null : num;
+    }else{
+      this.nuevoMovimiento.cantidad = null;
+    }
+    input.value = valor;
+  }
+
+  guardarMovimiento(): void{
+    const id = this.idUsuario();
+    const tipo = this.tipoSel();
+    const cantidad = this.nuevoMovimiento.cantidad;
+    const nombre = this.esGasto() ? "gasto" : "ingreso";
+    this.errorMovimiento.set(null);
+    if (id === null){ return; }
+    if (!tipo){ this.errorMovimiento.set(`Selecciona un tipo de ${nombre}.`); return; }
+    if (!this.nuevoMovimiento.descripcion.trim()){ this.errorMovimiento.set("La descripción es obligatoria."); return; }
+    if (cantidad === null || isNaN(cantidad) || cantidad <= 0){ this.errorMovimiento.set("Introduce una cantidad mayor que 0."); return; }
+    if (cantidad > 999999.99){ this.errorMovimiento.set("La cantidad máxima por movimiento es 999.999,99 €."); return; }
+    const hoy = new Date();
+    const fecha = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`;
+    if (this.esPeriodico()){
+      if (!this.periodoSel()){ this.errorMovimiento.set("Selecciona el periodo de repetición."); return; }
+      if (!this.nuevoMovimiento.fechaFin){ this.errorMovimiento.set("Selecciona la fecha fin del movimiento."); return; }
+      if (this.nuevoMovimiento.fechaFin <= fecha){ this.errorMovimiento.set("La fecha fin debe ser posterior a hoy."); return; }
+    }
+    this.payloadPendiente = {
+      idUsuario: id,
+      idMovimiento: tipo.idMovimiento,
+      descripcion: this.nuevoMovimiento.descripcion.trim(),
+      cantidad,
+      fechaMovimiento: fecha,
+      idPeriodo: this.esPeriodico() ? this.periodoSel()!.idPeriodo : null,
+      fechaFinMovimiento: this.esPeriodico() ? this.nuevoMovimiento.fechaFin : null
+    };
+    this.confirmacionMovimiento.set(true);
+  }
+
+  cerrarConfirmacionMovimiento(): void{
+    this.confirmacionMovimiento.set(false);
+    this.payloadPendiente = null;
+  }
+
+  textoCobroPeriodico(): string{
+    switch (this.periodoSel()?.periodo){
+      case "Diario": return "cada día";
+      case "Semanal": return "cada lunes (primer día de la semana)";
+      case "Mensual": return "el día 1 de cada mes";
+      case "2 meses": return "el día 1 cada 2 meses";
+      case "Anual": return "cada 1 de enero (primer día del año)";
+      default: return "";
+    }
+  }
+
+  confirmarGuardarMovimiento(): void{
+    const id = this.idUsuario();
+    const nombre = this.esGasto() ? "gasto" : "ingreso";
+    if (id === null || !this.payloadPendiente){ return; }
+    this.guardandoMovimiento.set(true);
+    this.http.post(this.movimientosUrl, this.payloadPendiente).subscribe({
+      next: () =>{
+        this.guardandoMovimiento.set(false);
+        this.confirmacionMovimiento.set(false);
+        this.payloadPendiente = null;
+        this.cerrarModalMovimiento();
+        this.cargarPagina(this.paginaActual());
+      },
+      error: (err) =>{
+        this.guardandoMovimiento.set(false);
+        this.confirmacionMovimiento.set(false);
+        if (err.status === 409){
+          this.errorMovimiento.set("Ya tienes 10 movimientos periódicos (el máximo). Elimina alguno desde tu perfil para añadir otro.");
+        }else{
+          this.errorMovimiento.set(`No se pudo añadir el ${nombre}. Inténtalo de nuevo.`);
+        }
+        console.error(`Error al añadir el ${nombre}:`, err);
+      }
+    });
   }
 }

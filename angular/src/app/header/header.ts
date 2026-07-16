@@ -1,6 +1,7 @@
 import { AfterViewInit, Component, ElementRef, Renderer2, input, signal } from "@angular/core";
 import { Router } from "@angular/router";
 import { Auth } from "../auth";
+import { Tema } from "../tema";
 
 @Component({
   selector: "app-header",
@@ -14,7 +15,7 @@ export class Header implements AfterViewInit {
   menuAbierto = signal(false);
   confirmarSalir = signal(false);
 
-  constructor(private router: Router, private auth: Auth, private el: ElementRef<HTMLElement>, private renderer: Renderer2){}
+  constructor(private router: Router, private auth: Auth, public tema: Tema, private el: ElementRef<HTMLElement>, private renderer: Renderer2){}
 
   ngAfterViewInit(): void{
     this.renderer.listen(this.el.nativeElement, "click", (evento: Event) => this.onClic(evento));
@@ -26,6 +27,7 @@ export class Header implements AfterViewInit {
       return;
     }
     switch (objetivo.dataset["accion"]){
+      case "alternar-tema": this.tema.alternar(); break;
       case "abrir-menu": this.toggleMenu(); break;
       case "cerrar-menu": this.cerrarMenu(); break;
       case "editar-perfil": this.editarPerfil(); break;

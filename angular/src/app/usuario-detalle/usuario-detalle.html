@@ -11,33 +11,33 @@
       <div class="self-stretch mt-8 grid grid-cols-5 gap-4 items-stretch">
         <div class="bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-6 text-left min-w-0">
           <p class="text-sm font-medium">Tu saldo:</p>
-          <p class="font-titulos text-4xl font-bold mt-2 text-texto">
+          <p class="font-titulos font-bold mt-2 text-texto whitespace-nowrap" [ngClass]="tamanoCantidad()">
             {{ saldoTexto() }} €
           </p>
         </div>
         <div class="bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-6 text-left min-w-0">
           <p class="text-sm font-medium">Movimientos de este mes:</p>
-          <p class="font-titulos text-4xl font-bold mt-2 text-texto">
+          <p class="font-titulos font-bold mt-2 text-texto whitespace-nowrap" [ngClass]="tamanoCantidad()">
             {{ movimientosMes() }}
           </p>
         </div>
         <div class="col-span-2 bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-6 text-left flex gap-6 min-w-0">
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium">Ingresos de este mes:</p>
-            <p class="font-titulos text-4xl font-bold mt-2 text-verde">
+            <p class="font-titulos font-bold mt-2 text-verde whitespace-nowrap" [ngClass]="tamanoCantidad()">
               +{{ ingresosTexto() }} €
             </p>
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium">Gastos de este mes:</p>
-            <p class="font-titulos text-4xl font-bold mt-2 text-peligro">
+            <p class="font-titulos font-bold mt-2 text-peligro whitespace-nowrap" [ngClass]="tamanoCantidad()">
               -{{ gastosTexto() }} €
             </p>
           </div>
         </div>
         <div class="bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-6 text-left min-w-0">
           <p class="text-sm font-medium">Ahorrado este mes:</p>
-          <p class="font-titulos text-4xl font-bold mt-2"
+          <p class="font-titulos font-bold mt-2 whitespace-nowrap" [ngClass]="tamanoCantidad()"
             [class.text-peligro]="ahorradoNivel() === 'bajo'"
             [class.text-aviso]="ahorradoNivel() === 'medio'"
             [class.text-verde]="ahorradoNivel() === 'alto'">
@@ -58,26 +58,26 @@
         </div>
 
         <!-- Cabecera de columnas -->
-        <div class="grid grid-cols-[1fr_1fr_auto_auto] text-texto/60 text-sm font-medium border-b border-borde px-6 py-3 shrink-0">
+        <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_6rem_8rem] gap-3 text-texto/60 text-sm font-medium border-b border-borde px-6 py-3 shrink-0">
           <span>Descripción</span>
           <span>Tipo</span>
-          <span class="px-4">Fecha</span>
-          <span class="text-right pl-4">Cantidad</span>
+          <span class="text-right">Fecha</span>
+          <span class="text-right">Cantidad</span>
         </div>
         <!-- Filas de movimientos: flex-1 + justify-between para repartir el espacio verticalmente -->
         <div class="flex-1 flex flex-col justify-between px-6 py-2">
           @for (m of ultimosMovimientos(); track $index){
-            <div class="grid grid-cols-[1fr_1fr_auto_auto] items-center text-sm border-b border-borde/50 last:border-0 py-2">
-              <span class="block max-w-[17ch] overflow-hidden whitespace-nowrap
-                [mask-image:linear-gradient(to_right,#000_15ch,transparent_17ch)]
-                [-webkit-mask-image:linear-gradient(to_right,#000_15ch,transparent_17ch)]"
+            <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_6rem_8rem] gap-3 items-center text-sm border-b border-borde/50 last:border-0 py-2">
+              <span class="block w-full overflow-hidden whitespace-nowrap
+                [mask-image:linear-gradient(to_right,#000_80%,transparent_100%)]
+                [-webkit-mask-image:linear-gradient(to_right,#000_80%,transparent_100%)]"
                 [title]="m.descripcion">{{ m.descripcion }}</span>
-              <span class="block max-w-[14ch] overflow-hidden whitespace-nowrap
-                [mask-image:linear-gradient(to_right,#000_12ch,transparent_14ch)]
-                [-webkit-mask-image:linear-gradient(to_right,#000_12ch,transparent_14ch)]"
+              <span class="block w-full overflow-hidden whitespace-nowrap
+                [mask-image:linear-gradient(to_right,#000_80%,transparent_100%)]
+                [-webkit-mask-image:linear-gradient(to_right,#000_80%,transparent_100%)]"
                 [title]="m.tipo">{{ m.tipo }}</span>
-              <span class="px-4 whitespace-nowrap">{{ m.fechaMovimiento | date:"dd/MM/yyyy" }}</span>
-              <span class="text-right font-semibold whitespace-nowrap pl-4"
+              <span class="text-right whitespace-nowrap">{{ m.fechaMovimiento | date:"dd/MM/yyyy" }}</span>
+              <span class="text-right font-semibold whitespace-nowrap"
                 [class.text-peligro]="m.gasto === 'S'"
                 [class.text-verde]="m.gasto === 'N'">
                 {{ m.gasto === 'S' ? '-' : '+' }}{{ m.cantidad | number:"1.2-2" }} €
@@ -91,11 +91,11 @@
 
       <!-- Chat FinBot: asistente de finanzas, a la derecha de Últimos movimientos -->
       <div class="w-full lg:w-1/2 bg-blanco border border-borde rounded-2xl shadow-sm overflow-hidden flex flex-col h-[28rem]">
-        <div class="flex items-center gap-2 px-6 py-4 border-b border-borde">
-          <span class="w-8 h-8 rounded-full bg-verde/15 text-verde flex items-center justify-center relative -top-2">
+        <div class="flex items-end gap-2 px-6 py-4 border-b border-borde">
+          <span class="w-8 h-8 rounded-full bg-verde/15 text-verde flex items-center justify-center shrink-0" style="position: relative; top: -5px;">
             <i class="bi bi-robot"></i>
           </span>
-          <h2 class="font-titulos text-lg font-bold">FinBot</h2>
+          <h2 class="font-titulos text-lg font-bold leading-none" style="margin: 0;">FinBot</h2>
         </div>
 
         <!-- Zona de mensajes con scroll propio -->
@@ -117,8 +117,8 @@
           <input name="chatInput" [(ngModel)]="chatInput" [disabled]="chatCargando()" autocomplete="off"
             placeholder="Pregúntame sobre tus finanzas..."
             class="flex-1 bg-fondo border border-borde rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-boton disabled:opacity-50" />
-          <button type="submit" [disabled]="chatCargando() || !chatInput.trim()"
-            class="w-10 h-10 shrink-0 rounded-xl bg-boton text-blanco flex items-center justify-center transition-colors hover:bg-boton/80 disabled:opacity-50 cursor-pointer">
+          <button type="submit" id="enviar_chat" [disabled]="chatCargando() || !chatInput.trim()"
+            class="w-10 h-10 shrink-0 rounded-full bg-boton text-blanco flex items-center justify-center transition-colors hover:bg-boton/80 disabled:opacity-50 cursor-pointer">
             <i class="bi bi-send-fill"></i>
           </button>
         </form>
