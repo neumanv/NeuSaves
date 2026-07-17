@@ -8,7 +8,7 @@
     }
 
     @if (usuario()){
-      <div class="self-stretch mt-8 grid grid-cols-5 gap-4 items-stretch">
+      <div class="self-stretch mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-stretch">
         <div class="bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-6 text-left min-w-0">
           <p class="text-sm font-medium">Tu saldo:</p>
           <p class="font-titulos font-bold mt-2 text-texto whitespace-nowrap" [ngClass]="tamanoCantidad()">
@@ -21,7 +21,7 @@
             {{ movimientosMes() }}
           </p>
         </div>
-        <div class="col-span-2 bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-6 text-left flex gap-6 min-w-0">
+        <div class="col-span-1 sm:col-span-2 bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-6 text-left flex flex-col sm:flex-row gap-6 min-w-0">
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium">Ingresos de este mes:</p>
             <p class="font-titulos font-bold mt-2 text-verde whitespace-nowrap" [ngClass]="tamanoCantidad()">
@@ -57,6 +57,10 @@
             class="text-sm font-medium text-blue-600 underline cursor-pointer">Ver todos</a>
         </div>
 
+        <!-- Zona deslizable en horizontal: en el panel en móvil las columnas no caben y se pisarían,
+             así que se puede desplazar en lugar de aplastarse (en escritorio hay sitio y no se desliza) -->
+        <div class="flex-1 min-h-0 overflow-x-auto">
+        <div class="min-w-[480px] h-full flex flex-col">
         <!-- Cabecera de columnas -->
         <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_6rem_8rem] gap-3 text-texto/60 text-sm font-medium border-b border-borde px-6 py-3 shrink-0">
           <span>Descripción</span>
@@ -86,6 +90,8 @@
           } @empty {
             <p class="text-center text-texto/50 py-6">No hay movimientos todavía</p>
           }
+        </div>
+        </div>
         </div>
       </div>
 

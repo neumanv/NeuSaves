@@ -25,11 +25,14 @@ public class MovimientoPeriodicoService{
 
     private final MovimientoUsuarioRepository movimientoUsuarioRepository;
     private final PeriodoRepository periodoRepository;
+    private final CorreoService correoService;
 
     public MovimientoPeriodicoService(MovimientoUsuarioRepository movimientoUsuarioRepository,
-                                      PeriodoRepository periodoRepository){
+                                      PeriodoRepository periodoRepository,
+                                      CorreoService correoService){
         this.movimientoUsuarioRepository = movimientoUsuarioRepository;
         this.periodoRepository = periodoRepository;
+        this.correoService = correoService;
     }
 
     //Se ejecuta al arrancar (por si el servidor estuvo apagado algún día de cobro)
@@ -56,7 +59,9 @@ public class MovimientoPeriodicoService{
 
             //Genera todos los cobros pendientes hasta hoy (recupera los días perdidos) sin pasar la fecha fin
             while (siguiente != null && !siguiente.isAfter(hoy) && (fin == null || !siguiente.isAfter(fin))){
-                movimientoUsuarioRepository.save(crearCobro(plantilla, siguiente));
+                MovimientoUsuario cobro = movimientoUsuarioRepository.save(crearCobro(plantilla, siguiente));
+                //Avisa por correo de cada cobro periódico generado, indicando que es periódico y cuándo termina
+                correoService.avisarMovimiento(cobro, plantilla);
                 plantilla.setUltimoCobro(siguiente);
                 siguiente = siguienteCobro(periodo, plantilla, siguiente, false);
                 generado = true;

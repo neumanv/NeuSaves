@@ -1,6 +1,6 @@
 <div class="bg-fondo text-texto font-texto min-h-screen flex flex-col">
   <app-header [mostrarPerfil]="true" [mostrarCambiarPerfil]="false" />
-  <main class="flex-1 w-[60%] mx-auto flex flex-col items-center py-12 px-4">
+  <main class="flex-1 w-[92%] lg:w-[60%] mx-auto flex flex-col items-center py-12 px-4">
   <div class="text-center mb-10">
     <p class="text-xs font-semibold uppercase tracking-widest mb-1">Sistema de Gestión de Gastos</p>
     <h2 class="font-titulos text-3xl font-bold">Tus usuarios</h2>
@@ -89,8 +89,8 @@
         </div>
         <h3 class="font-titulos text-lg font-bold">Nuevo usuario</h3>
       </div>
-      <div class="grid grid-cols-2 gap-3">
-        <label class="col-span-2 font-medium">Nombre *
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <label class="col-span-1 sm:col-span-2 font-medium">Nombre *
           <input name="nombre" [(ngModel)]="nuevoUsuario.nombre" required maxlength="50" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-boton" />
         </label>
         <label class="col-span-1 font-medium">
@@ -100,7 +100,7 @@
         <label class="col-span-1 font-medium">Segundo apellido
           <input name="apellido2" [(ngModel)]="nuevoUsuario.apellido2" maxlength="30" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-boton" />
         </label>
-        <div class="col-span-2 font-medium">
+        <div class="col-span-1 sm:col-span-2 font-medium">
           Sexo *
           <div class="mt-1 grid grid-cols-2 gap-3">
             <button type="button" data-accion="sexo-m"

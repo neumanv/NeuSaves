@@ -1,6 +1,6 @@
 <div class="bg-fondo text-texto font-texto min-h-screen flex flex-col">
   <app-header />
-  <main class="flex-1 w-[60%] mx-auto flex flex-col items-center justify-center py-6 px-4">
+  <main class="flex-1 w-[92%] lg:w-[60%] mx-auto flex flex-col items-center justify-center py-6 px-4">
 
     @switch (modo()){
       @case ("login"){ <!-- Iniciar sesión -->
@@ -55,17 +55,17 @@
 
       <!-- Registrarse -->
       @case ("registro"){
-        <form (ngSubmit)="crearCuenta()" class="bg-blanco w-full max-w-xl rounded-2xl border border-borde shadow-sm p-4 text-[12px] tarjeta-login">
+        <form (ngSubmit)="crearCuenta()" class="bg-blanco w-full max-w-xl rounded-2xl border border-borde shadow-sm p-4 text-[12px] tarjeta-login sm:scale-[1.06]">
           <div class="text-center mb-2">
             <h3 class="font-titulos text-lg font-bold">Crear un usuario</h3>
           </div>
-          <div class="grid grid-cols-2 gap-x-3 gap-y-2">
-            <div class="col-span-2 font-medium">Email *
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
+            <div class="col-span-1 sm:col-span-2 font-medium">Email *
               <div class="mt-1">
                 <input name="email" type="email" [(ngModel)]="nuevoUsuario.email" required maxlength="50" class="block w-full bg-fondo border border-borde rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-boton" />
               </div>
             </div>
-            <div class="col-span-2 font-medium">Contraseña *
+            <div class="col-span-1 sm:col-span-2 font-medium">Contraseña *
               <div class="relative mt-1">
                 <input name="contrasena" [type]="verContrasena() ? 'text' : 'password'" [(ngModel)]="nuevoUsuario.contrasena" required maxlength="20" autocomplete="new-password" class="block w-full bg-fondo border border-borde rounded-lg px-3 py-1.5 pr-11 text-[12px] focus:outline-none focus:border-boton" />
                 <button type="button" id="ver_contrasena" data-accion="ver-contrasena" [title]="verContrasena() ? 'Ocultar contraseña' : 'Ver contraseña'" class="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-texto hover:bg-borde transition-colors cursor-pointer">
@@ -120,10 +120,10 @@
               <input name="telefono1" [(ngModel)]="nuevoUsuario.telefono1" required maxlength="9" inputmode="numeric" (input)="soloNumeros($event, 'telefono1')"
                 class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-boton" />
             </label>
-            <label class="col-span-2 font-medium">Teléfono 2
+            <label class="col-span-1 sm:col-span-2 font-medium">Teléfono 2
               <input name="telefono2" [(ngModel)]="nuevoUsuario.telefono2" maxlength="9" inputmode="numeric" (input)="soloNumeros($event, 'telefono2')" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-boton" />
             </label>
-            <div class="col-span-2 font-medium">
+            <div class="col-span-1 sm:col-span-2 font-medium">
               Sexo *
               <div class="mt-1 grid grid-cols-2 gap-3">
                 <button type="button" data-accion="sexo-m"

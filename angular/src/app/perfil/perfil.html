@@ -11,9 +11,9 @@
     <h1 class="font-titulos text-3xl font-bold mb-6">Editar perfil</h1>
 
     <!-- Pestañas -->
-    <div class="flex border-b border-borde mb-6">
+    <div class="flex border-b border-borde mb-6 overflow-x-auto">
       <button type="button" (click)="cambiarPestana('datos')"
-        class="px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors cursor-pointer"
+        class="px-4 sm:px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px whitespace-nowrap shrink-0 transition-colors cursor-pointer"
         [class.border-verde]="pestana() === 'datos'"
         [class.text-verde]="pestana() === 'datos'"
         [class.border-transparent]="pestana() !== 'datos'"
@@ -22,7 +22,7 @@
       </button>
       @if (!esSubusuario()){
         <button type="button" (click)="cambiarPestana('contrasena')"
-          class="px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors cursor-pointer"
+          class="px-4 sm:px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px whitespace-nowrap shrink-0 transition-colors cursor-pointer"
           [class.border-verde]="pestana() === 'contrasena'"
           [class.text-verde]="pestana() === 'contrasena'"
           [class.border-transparent]="pestana() !== 'contrasena'"
@@ -31,7 +31,7 @@
         </button>
       }
       <button type="button" (click)="cambiarPestana('periodicos')"
-        class="px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors cursor-pointer"
+        class="px-4 sm:px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px whitespace-nowrap shrink-0 transition-colors cursor-pointer"
         [class.border-verde]="pestana() === 'periodicos'"
         [class.text-verde]="pestana() === 'periodicos'"
         [class.border-transparent]="pestana() !== 'periodicos'"
@@ -44,15 +44,15 @@
       <!-- Pestaña 1: todos los datos del usuario -->
       @case ("datos"){
         <form (ngSubmit)="guardarDatos()" class="bg-blanco w-full rounded-2xl border border-borde shadow-sm p-6 text-sm">
-          <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
             @if (!esSubusuario()){
-              <div class="col-span-2 font-medium">Email *
+              <div class="col-span-1 sm:col-span-2 font-medium">Email *
                 <div class="mt-1">
                   <input name="email" type="email" [(ngModel)]="datos.email" required maxlength="50" class="block w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton" />
                 </div>
               </div>
             }
-            <label class="col-span-2 font-medium">Nombre *
+            <label class="col-span-1 sm:col-span-2 font-medium">Nombre *
               <input name="nombre" [(ngModel)]="datos.nombre" required maxlength="50" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton" />
             </label>
             <label class="col-span-1 font-medium">Primer apellido *
@@ -101,7 +101,7 @@
               <input name="telefono2" [(ngModel)]="datos.telefono2" maxlength="9" inputmode="numeric" (input)="soloNumeros($event, 'telefono2')" class="mt-1 w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton" />
             </label>
             }
-            <div class="col-span-2 font-medium">
+            <div class="col-span-1 sm:col-span-2 font-medium">
               Sexo *
               <div class="mt-1 grid grid-cols-2 gap-3">
                 <button type="button" (click)="elegirSexo('M')"

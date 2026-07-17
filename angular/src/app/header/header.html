@@ -1,6 +1,6 @@
-<header class="bg-blanco border border-borde rounded-xl w-[65%] mx-auto my-2">
-  <div class="max-w-5xl mx-auto px-6 py-4 flex items-center gap-3">
-    <img src="NeuSaves.png" alt="Logo de NeuSaves" class="h-10 w-auto" />
+<header class="bg-blanco border border-borde rounded-xl w-[92%] lg:w-[65%] mx-auto my-2">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
+    <img [src]="tema.oscuro() ? 'NeuSaves_dark.png' : 'NeuSaves.png'" alt="Logo de NeuSaves" class="h-10 w-auto" />
     <span class="font-titulos text-2xl font-bold text-texto">NeuSaves</span>
 
     @if (mostrarPerfil()){

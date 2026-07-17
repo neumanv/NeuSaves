@@ -6,6 +6,7 @@ import com.gastos.backend.dto.MovimientoPeriodico;
 import com.gastos.backend.dto.UltimoMovimiento;
 import com.gastos.backend.model.MovimientoUsuario;
 import com.gastos.backend.repository.MovimientoUsuarioRepository;
+import com.gastos.backend.service.CorreoService;
 import com.gastos.backend.service.MovimientoPeriodicoService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -43,14 +44,17 @@ public class MovimientoUsuarioController{
 
     private final MovimientoUsuarioRepository movimientoUsuarioRepository;
     private final MovimientoPeriodicoService movimientoPeriodicoService;
+    private final CorreoService correoService;
 
     @PersistenceContext
     private EntityManager entityManager;
 
     public MovimientoUsuarioController(MovimientoUsuarioRepository movimientoUsuarioRepository,
-                                       MovimientoPeriodicoService movimientoPeriodicoService){
+                                       MovimientoPeriodicoService movimientoPeriodicoService,
+                                       CorreoService correoService){
         this.movimientoUsuarioRepository = movimientoUsuarioRepository;
         this.movimientoPeriodicoService = movimientoPeriodicoService;
+        this.correoService = correoService;
     }
 
     //Número de movimientos del usuario en el mes actual (según fecha_movimiento)
@@ -123,6 +127,8 @@ public class MovimientoUsuarioController{
         MovimientoUsuario guardado = movimientoUsuarioRepository.save(movimiento);
         entityManager.flush();
         entityManager.refresh(guardado);
+        //Avisa por correo de cualquier movimiento añadido, sea puntual o periódico
+        correoService.avisarMovimiento(guardado);
         return ResponseEntity.ok(guardado);
     }
 
