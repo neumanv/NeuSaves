@@ -374,5 +374,53 @@
       </div>
     </div>
   }
+
+  <!-- Modal de confirmación del cambio de correo (código enviado al correo nuevo) -->
+  @if (verificandoEmail()){
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-texto/30 backdrop-blur-sm" (click)="cerrarVerificacionEmail()">
+      <div class="relative bg-blanco text-texto font-texto w-full max-w-sm rounded-2xl border border-borde shadow-xl p-6" (click)="$event.stopPropagation()">
+        <div class="text-center mb-4">
+          <div class="mx-auto w-12 h-12 bg-fondo rounded-full flex items-center justify-center mb-2 border border-borde">
+            <i class="bi bi-envelope-check" style="font-size: 1.25rem;"></i>
+          </div>
+          <h3 class="font-titulos text-lg font-bold">Confirma tu nuevo correo</h3>
+          <p class="text-sm text-texto/70 mt-1">
+            Hemos enviado un código a <span class="font-semibold break-words">{{ emailPendiente() }}</span>.
+            Introdúcelo antes de que termine el tiempo o tu correo no cambiará.
+          </p>
+        </div>
+
+        <label for="codigo-email" class="block font-medium text-sm mb-1">Código de confirmación</label>
+        <input id="codigo-email" name="codigoEmail" [(ngModel)]="codigoEmail" inputmode="numeric" maxlength="5"
+          placeholder="12345" autocomplete="one-time-code"
+          class="block w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-center text-lg tracking-[0.4em] focus:outline-none focus:border-boton" />
+
+        <p class="text-sm text-center mt-3"
+          [class.text-texto]="segundosRestantesEmail() > 0"
+          [class.text-peligro]="segundosRestantesEmail() === 0">
+          @if (segundosRestantesEmail() > 0){
+            Tiempo restante: <span class="font-semibold font-titulos">{{ tiempoRestanteEmail() }}</span>
+          }@else{
+            El tiempo ha expirado
+          }
+        </p>
+
+        @if (errorCodigoEmail()){
+          <p class="text-peligro text-sm mt-3 font-semibold text-center">{{ errorCodigoEmail() }}</p>
+        }
+
+        <div class="flex gap-3 mt-5">
+          <button type="button" (click)="cerrarVerificacionEmail()" [disabled]="confirmandoEmail()"
+            class="flex-1 py-2.5 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde font-medium transition-colors disabled:opacity-50 cursor-pointer">
+            Cancelar
+          </button>
+          <button type="button" (click)="confirmarCambioEmail()" [disabled]="confirmandoEmail() || segundosRestantesEmail() === 0"
+            class="flex-1 py-2.5 px-4 rounded-xl bg-boton text-blanco hover:bg-boton/80 font-semibold transition-colors disabled:opacity-50 cursor-pointer">
+            {{ confirmandoEmail() ? "Confirmando..." : "Confirmar" }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
   <app-footer/>
 </div>

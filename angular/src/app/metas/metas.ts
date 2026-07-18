@@ -83,28 +83,55 @@ export class Metas implements OnInit{
   }
 
   //--- Arrastre para reordenar las metas ---
-  alEmpezarArrastre(indice: number): void{
+  //Se usan Pointer Events (no el arrastre nativo HTML5) para que funcione
+  //igual con ratón, dedo o lápiz. El arrastre nativo no se dispara al tocar
+  //la pantalla y además choca con la emulación táctil del navegador.
+  private moverPointer = (evento: PointerEvent) => this.alMoverArrastre(evento);
+  private soltarPointer = () => this.alSoltarArrastre();
+
+  //Empieza el arrastre al pulsar sobre el asa de una tarjeta
+  alEmpezarArrastre(indice: number, evento: PointerEvent): void{
+    evento.preventDefault();
     this.arrastrando.set(indice);
+    document.addEventListener("pointermove", this.moverPointer);
+    document.addEventListener("pointerup", this.soltarPointer);
+    document.addEventListener("pointercancel", this.soltarPointer);
   }
 
-  //Al pasar por encima de otra meta, se reordena la lista en vivo
-  alArrastrarSobre(evento: DragEvent, indice: number): void{
-    evento.preventDefault();
+  //Mientras se arrastra, se busca la tarjeta que hay debajo y se reordena en vivo
+  private alMoverArrastre(evento: PointerEvent): void{
     const origen = this.arrastrando();
-    if (origen === null || origen === indice){
+    if (origen === null){
+      return;
+    }
+    //Se evita que la página haga scroll mientras se reordena
+    evento.preventDefault();
+    const elemento = document.elementFromPoint(evento.clientX, evento.clientY);
+    const tarjeta = elemento?.closest("[data-indice]") as HTMLElement | null;
+    if (!tarjeta){
+      return;
+    }
+    const destino = Number(tarjeta.dataset["indice"]);
+    if (Number.isNaN(destino) || destino === origen){
       return;
     }
     this.metas.update((lista) =>{
       const copia = [...lista];
       const [movida] = copia.splice(origen, 1);
-      copia.splice(indice, 0, movida);
+      copia.splice(destino, 0, movida);
       return copia;
     });
-    this.arrastrando.set(indice);
+    this.arrastrando.set(destino);
   }
 
-  //Al soltar, se guarda el nuevo orden en el backend
-  alTerminarArrastre(): void{
+  //Al soltar, se limpia el estado y se guarda el nuevo orden en el backend
+  private alSoltarArrastre(): void{
+    document.removeEventListener("pointermove", this.moverPointer);
+    document.removeEventListener("pointerup", this.soltarPointer);
+    document.removeEventListener("pointercancel", this.soltarPointer);
+    if (this.arrastrando() === null){
+      return;
+    }
     this.arrastrando.set(null);
     this.guardarOrden();
   }

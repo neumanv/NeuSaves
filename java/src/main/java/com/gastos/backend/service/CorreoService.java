@@ -55,6 +55,26 @@ public class CorreoService{
         }
     }
 
+    //Envía al correo NUEVO el código para confirmar un cambio de email desde el perfil
+    public void enviarCodigoCambioEmail(String email, String codigo){
+        //Ayuda de desarrollo: si no hay servidor de correo, el código puede verse en el log
+        log.info("Código de cambio de email para {}: {}", email, codigo);
+
+        SimpleMailMessage mensaje = new SimpleMailMessage();
+        mensaje.setFrom("no-reply@neusaves.local");
+        mensaje.setTo(email);
+        mensaje.setSubject("Confirma tu nuevo correo en NeuSaves");
+        mensaje.setText("Hola,\n\nHas solicitado usar esta dirección como correo de tu cuenta de NeuSaves.\n\n"
+                + "Tu código de confirmación es: " + codigo
+                + "\n\nIntrodúcelo en los próximos 2 minutos para completar el cambio. "
+                + "Si no lo haces, tu correo seguirá siendo el actual.\n\nNeuSaves");
+        try{
+            remitente.send(mensaje);
+        }catch (MailException e){
+            log.error("No se pudo enviar el código de cambio de email a {}: {}", email, e.getMessage());
+        }
+    }
+
     public void enviarNuevaContrasena(String email, String contrasena){
         log.info("Nueva contraseña para {}: {}", email, contrasena);
 

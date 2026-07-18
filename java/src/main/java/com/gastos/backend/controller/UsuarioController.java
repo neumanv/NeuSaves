@@ -19,7 +19,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/usuarios")
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = {"http://localhost:4200", "http://localhost:4300"})
 public class UsuarioController{
 
     private static final long MAX_SUBUSUARIOS = 4;
@@ -95,17 +95,8 @@ public class UsuarioController{
             return ResponseEntity.ok(usuarioRepository.save(usuario));
         }
 
-        String email = datos.getEmail() == null ? "" : datos.getEmail().trim();
-        if (email.isEmpty() || email.length() > 50 || !email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")){
-            return ResponseEntity.badRequest().build();
-        }
-        //El email no puede pertenecer a otro usuario
-        Usuario existente = usuarioRepository.findByEmailIgnoreCase(email).orElse(null);
-        if (existente != null && !existente.getIdUsuario().equals(id)){
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
-        }
-
-        usuario.setEmail(email);
+        //El email NO se cambia aquí: pasa por el flujo de confirmación por código (/api/auth/cambiar-email).
+        //Así se conserva el correo actual hasta que el usuario confirma el nuevo desde su propia bandeja.
         usuario.setNombre(datos.getNombre().trim());
         usuario.setApellido1(datos.getApellido1().trim());
         usuario.setApellido2(datos.getApellido2());

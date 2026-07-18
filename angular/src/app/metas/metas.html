@@ -20,12 +20,9 @@
       }
     </div>
 
-    <div class="flex flex-col gap-3">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
       @for (meta of metas(); track meta.idMetaUsuario; let i = $index){
-        <div draggable="true"
-          (dragstart)="alEmpezarArrastre(i)"
-          (dragover)="alArrastrarSobre($event, i)"
-          (dragend)="alTerminarArrastre()"
+        <div [attr.data-indice]="i"
           class="relative bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-4 pr-14 flex items-start gap-4 transition-opacity"
           [class.opacity-40]="arrastrando() === i"
           [class.cursor-grabbing]="arrastrando() === i">
@@ -38,7 +35,9 @@
           </button>
 
           <!-- Asa de arrastre -->
-          <span class="mt-1 shrink-0 text-texto/40 cursor-grab" title="Arrastra para reordenar">
+          <span class="mt-1 shrink-0 text-texto/40 cursor-grab touch-none select-none"
+            title="Arrastra para reordenar"
+            (pointerdown)="alEmpezarArrastre(i, $event)">
             <i class="bi bi-grip-vertical" style="font-size: 1.25rem;"></i>
           </span>
 
@@ -57,18 +56,18 @@
           </button>
 
           <div class="min-w-0">
-            <h2 class="font-titulos text-lg font-bold"
+            <h2 class="font-titulos text-lg font-bold break-words"
               [class.line-through]="meta.completado === 'S'"
               [class.opacity-60]="meta.completado === 'S'">
               {{ meta.titulo }}
             </h2>
-            <p class="text-sm text-texto/70" [class.opacity-60]="meta.completado === 'S'">
+            <p class="text-sm text-texto/70 break-words" [class.opacity-60]="meta.completado === 'S'">
               {{ meta.descripcion }}
             </p>
           </div>
         </div>
       } @empty {
-        <div class="bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-10 text-center text-texto/50">
+        <div class="md:col-span-2 bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-10 text-center text-texto/50">
           Todavía no tienes metas. Crea una con el botón "Nueva meta".
         </div>
       }

@@ -169,7 +169,9 @@ export class UsuarioDetalle implements OnInit{
 
   //Tamaño de fuente común a todas las cantidades del panel: se calcula a partir del importe más largo
   //de todos para que ninguno se parta en dos líneas y, a la vez, todas las tarjetas mantengan el
-  //mismo tamaño de número (no se reduce solo el largo dejando los demás grandes)
+  //mismo tamaño de número (no se reduce solo el largo dejando los demás grandes).
+  //A partir de xl el panel pasa a 5 columnas (tarjetas estrechas), por lo que se aplica un tamaño
+  //más reducido en ese punto para que las cantidades largas no se salgan de la tarjeta.
   tamanoCantidad = computed(() =>{
     const largo = Math.max(
       this.saldoTexto().length,
@@ -178,12 +180,12 @@ export class UsuarioDetalle implements OnInit{
       this.ahorradoTexto().length
     );
     if (largo >= 11){
-      return "text-2xl";
+      return "text-2xl xl:text-lg";
     }
     if (largo >= 9){
-      return "text-3xl";
+      return "text-3xl xl:text-xl";
     }
-    return "text-4xl";
+    return "text-4xl xl:text-2xl";
   });
 
   ahorradoNivel = computed<"bajo" | "medio" | "alto">(() =>{

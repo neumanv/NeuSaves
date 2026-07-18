@@ -1,4 +1,4 @@
-import{ Component, OnInit, Inject, PLATFORM_ID, signal, computed } from "@angular/core";
+import{ Component, OnInit, OnDestroy, Inject, PLATFORM_ID, signal, computed } from "@angular/core";
 import{ HttpClient, HttpErrorResponse } from "@angular/common/http";
 import{ CommonModule, isPlatformBrowser, Location } from "@angular/common";
 import{ FormsModule } from "@angular/forms";
@@ -49,7 +49,7 @@ type Pestana = "datos" | "contrasena" | "periodicos";
   imports: [CommonModule, FormsModule, Header, FooterComponent],
   templateUrl: "./perfil.html"
 })
-export class Perfil implements OnInit{
+export class Perfil implements OnInit, OnDestroy{
   private readonly usuariosUrl = "http://localhost:8080/api/usuarios";
   private readonly authUrl = "http://localhost:8080/api/auth";
   private readonly movimientosUrl = "http://localhost:8080/api/movimientos-usuarios";
@@ -75,6 +75,26 @@ export class Perfil implements OnInit{
   guardando = signal(false);
   errorDatos = signal<string | null>(null);
   avisoDatos = signal<string | null>(null);
+
+  //--- Cambio de email con confirmación por código enviado al correo nuevo ---
+  //Modal de confirmación abierto (true mientras se espera el código)
+  verificandoEmail = signal(false);
+  //Correo nuevo a la espera de confirmación (se muestra en el modal)
+  emailPendiente = signal("");
+  //Código de 5 cifras que el usuario recibe en el correo nuevo
+  codigoEmail = "";
+  confirmandoEmail = signal(false);
+  errorCodigoEmail = signal<string | null>(null);
+  //Cuenta atrás de 2 minutos; al llegar a 0 el código deja de ser válido
+  segundosRestantesEmail = signal(0);
+  private temporizadorEmail: ReturnType<typeof setInterval> | null = null;
+  //Formatea los segundos restantes como m:ss para el modal
+  tiempoRestanteEmail = computed(() =>{
+    const total = this.segundosRestantesEmail();
+    const minutos = Math.floor(total / 60);
+    const segundos = total % 60;
+    return `${minutos}:${segundos.toString().padStart(2, "0")}`;
+  });
 
   //Desplegable de prefijos (mismo comportamiento que en el registro)
   prefijoAbierto = signal(false);
@@ -387,8 +407,11 @@ export class Perfil implements OnInit{
       return;
     }
 
+    //El correo no se envía en el PUT: si ha cambiado, se confirma aparte por código.
+    const emailNuevo = d.email.trim();
+    const emailCambiado = emailNuevo.toLowerCase() !== (usuario.email ?? "").trim().toLowerCase();
+
     const payload ={
-      email: d.email.trim(),
       nombre: d.nombre.trim(),
       apellido1: d.apellido1.trim(),
       apellido2: d.apellido2.trim() || null,
@@ -412,7 +435,12 @@ export class Perfil implements OnInit{
         if (this.auth.usuarioActivo()){
           this.auth.activarUsuario(fusion);
         }
-        this.avisoDatos.set("Datos guardados correctamente.");
+        //Si además ha cambiado el correo, se pide el código de confirmación al correo nuevo
+        if (emailCambiado){
+          this.solicitarCambioEmail(emailNuevo);
+        }else{
+          this.avisoDatos.set("Datos guardados correctamente.");
+        }
       },
       error: (err: HttpErrorResponse) =>{
         this.guardando.set(false);
@@ -517,6 +545,130 @@ export class Perfil implements OnInit{
         }
       }
     });
+  }
+
+  //--- Cambio de email con confirmación por código ---
+  //Paso 1: pide al backend que envíe un código al correo nuevo y abre el modal de confirmación.
+  //Los demás datos ya se han guardado; el correo solo cambiará si se confirma el código a tiempo.
+  private solicitarCambioEmail(emailNuevo: string): void{
+    const usuario = this.auth.usuario();
+    if (!usuario){
+      return;
+    }
+    this.errorDatos.set(null);
+    this.errorCodigoEmail.set(null);
+    this.codigoEmail = "";
+    this.http.post<void>(`${this.authUrl}/cambiar-email/solicitar`,{
+      idUsuario: usuario.idUsuario,
+      email: emailNuevo
+    }).subscribe({
+      next: () =>{
+        this.emailPendiente.set(emailNuevo);
+        this.verificandoEmail.set(true);
+        this.iniciarCuentaAtrasEmail();
+      },
+      error: (err: HttpErrorResponse) =>{
+        //El resto de datos sí se guardaron; solo falla el cambio de correo
+        if (err.status === 409){
+          this.errorDatos.set("Ese correo ya está registrado por otra cuenta. El resto de datos sí se han guardado.");
+        }else if (err.status === 400){
+          this.errorDatos.set("El correo nuevo no es válido. El resto de datos sí se han guardado.");
+        }else{
+          this.errorDatos.set("No se pudo iniciar el cambio de correo. El resto de datos sí se han guardado.");
+        }
+        //Se restaura en el formulario el correo actual, ya que no ha llegado a cambiar
+        this.datos.email = usuario.email ?? "";
+      }
+    });
+  }
+
+  //Paso 2: envía el código introducido. Solo si es correcto y dentro de los 2 minutos se cambia el correo.
+  confirmarCambioEmail(): void{
+    const usuario = this.auth.usuario();
+    if (!usuario){
+      return;
+    }
+    const codigo = this.codigoEmail.trim();
+    if (!/^[0-9]{5}$/.test(codigo)){
+      this.errorCodigoEmail.set("Introduce el código de 5 cifras que has recibido por correo.");
+      return;
+    }
+    this.confirmandoEmail.set(true);
+    this.errorCodigoEmail.set(null);
+    this.http.post<UsuarioSesion>(`${this.authUrl}/cambiar-email/confirmar`,{
+      idUsuario: usuario.idUsuario,
+      codigo
+    }).subscribe({
+      next: (actualizado) =>{
+        this.confirmandoEmail.set(false);
+        const fusion = { ...usuario, ...actualizado };
+        this.auth.iniciarSesion(fusion);
+        this.usuarioEditando = fusion;
+        if (this.auth.usuarioActivo()){
+          this.auth.activarUsuario(fusion);
+        }
+        this.datos.email = fusion.email ?? "";
+        this.cerrarVerificacionEmail();
+        this.avisoDatos.set("Correo actualizado correctamente.");
+      },
+      error: (err: HttpErrorResponse) =>{
+        this.confirmandoEmail.set(false);
+        if (err.status === 410){
+          //Han pasado los 2 minutos: el cambio ya no es válido
+          this.detenerCuentaAtrasEmail();
+          this.segundosRestantesEmail.set(0);
+          this.errorCodigoEmail.set("El tiempo ha expirado. Cierra y vuelve a guardar para pedir un código nuevo.");
+        }else if (err.status === 409){
+          this.errorCodigoEmail.set("Ese correo ya está registrado por otra cuenta.");
+        }else{
+          this.errorCodigoEmail.set("El código no es correcto.");
+        }
+      }
+    });
+  }
+
+  //Cierra el modal sin confirmar: descarta el cambio pendiente y restaura el correo actual
+  cerrarVerificacionEmail(): void{
+    const usuario = this.auth.usuario();
+    if (usuario && this.verificandoEmail()){
+      this.http.post<void>(`${this.authUrl}/cambiar-email/cancelar`, { idUsuario: usuario.idUsuario, codigo: "" })
+        .subscribe({ error: () => {} });
+    }
+    this.detenerCuentaAtrasEmail();
+    this.verificandoEmail.set(false);
+    this.emailPendiente.set("");
+    this.codigoEmail = "";
+    this.errorCodigoEmail.set(null);
+    if (usuario){
+      this.datos.email = usuario.email ?? "";
+    }
+  }
+
+  //Cuenta atrás visual de 2 minutos (la validez real la controla el backend)
+  private iniciarCuentaAtrasEmail(): void{
+    this.detenerCuentaAtrasEmail();
+    this.segundosRestantesEmail.set(120);
+    this.temporizadorEmail = setInterval(() =>{
+      const restante = this.segundosRestantesEmail() - 1;
+      if (restante <= 0){
+        this.segundosRestantesEmail.set(0);
+        this.detenerCuentaAtrasEmail();
+        this.errorCodigoEmail.set("El tiempo ha expirado. Cierra y vuelve a guardar para pedir un código nuevo.");
+      }else{
+        this.segundosRestantesEmail.set(restante);
+      }
+    }, 1000);
+  }
+
+  private detenerCuentaAtrasEmail(): void{
+    if (this.temporizadorEmail){
+      clearInterval(this.temporizadorEmail);
+      this.temporizadorEmail = null;
+    }
+  }
+
+  ngOnDestroy(): void{
+    this.detenerCuentaAtrasEmail();
   }
 
   //--- Ayudas (mismas que en el registro) ---
