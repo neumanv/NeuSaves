@@ -118,6 +118,12 @@ por eso los mensajes de aviso/error de formularios usan estas clases propias en 
   margin-top: 1.25rem;
 }
 
+/*Desplegable del año del modal "Descargar cuentas": Bootstrap resetea los márgenes de <select>
+  (regla sin capa que gana a mb-* de Tailwind), por eso el margen va en una clase propia*/
+.desplegable-descarga{
+  margin-bottom: 2rem;
+}
+
 /*Bootstrap resetea los <button> a border-radius:0 (regla sin capa que gana a rounded-* de Tailwind).
   Esta clase da a los botones el mismo borde y redondeo que la tarjeta-botón "Metas" (que es un <a> y no sufre ese reset)*/
 .boton-tarjeta{

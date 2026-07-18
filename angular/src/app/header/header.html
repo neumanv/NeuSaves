@@ -30,6 +30,11 @@
                   Cambiar de perfil
                 </button>
               }
+              @if (mostrarDescargarCuentas()){
+                <button type="button" data-accion="abrir-descarga" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-texto hover:bg-fondo transition-colors cursor-pointer">
+                  Descargar cuentas
+                </button>
+              }
               <button type="button" data-accion="pedir-salir" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-peligro/80 hover:bg-peligro/10 transition-colors cursor-pointer">
                 <i class="bi bi-box-arrow-left"></i>
                 Cerrar sesión
@@ -41,6 +46,49 @@
     }
   </div>
 </header>
+
+@if (modalDescarga()){
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-texto/30 backdrop-blur-sm modal-overlay" data-accion="cerrar-descarga">
+    <div class="relative bg-blanco text-texto font-texto w-full max-w-sm rounded-2xl border border-borde shadow-xl p-6 text-center modal-card" data-accion="noop">
+      <div class="mx-auto w-14 h-14 rounded-full flex items-center justify-center mb-4 border border-borde bg-fondo">
+        <i class="bi bi-file-earmark-arrow-down" style="font-size: 1.5rem;"></i>
+      </div>
+      <h3 class="font-titulos text-lg font-bold mb-1">Descargar cuentas</h3>
+
+      @if (!pasoConfirmar()){
+        @if (cargandoAnios()){
+          <p class="text-sm mb-6">Cargando años disponibles…</p>
+        }@else if (anios().length === 0){
+          <p class="text-sm mb-6">{{ errorDescarga() ?? "Todavía no hay movimientos que descargar." }}</p>
+          <button type="button" data-accion="cerrar-descarga" class="w-full py-2.5 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde font-medium transition-colors cursor-pointer">Cerrar</button>
+        }@else{
+          <p class="text-sm mb-4">Elige el año del que quieres descargar las cuentas.</p>
+          <select [(ngModel)]="anioSel"
+            class="w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm desplegable-descarga focus:outline-none focus:border-boton cursor-pointer">
+            @for (a of anios(); track a){
+              <option [ngValue]="a">{{ a }}</option>
+            }
+          </select>
+          <div class="flex gap-3">
+            <button type="button" data-accion="cerrar-descarga" class="flex-1 py-2.5 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde font-medium transition-colors cursor-pointer">Cancelar</button>
+            <button type="button" data-accion="pedir-descarga" class="flex-1 py-2.5 px-4 rounded-xl bg-boton text-blanco hover:bg-boton/80 font-semibold transition-colors cursor-pointer">Descargar</button>
+          </div>
+        }
+      }@else{
+        <p class="text-sm mb-6">¿Seguro que quieres descargar las cuentas de {{ anioSel }}?</p>
+        @if (errorDescarga()){
+          <p class="text-sm text-peligro mb-4">{{ errorDescarga() }}</p>
+        }
+        <div class="flex gap-3">
+          <button type="button" data-accion="volver-descarga" [disabled]="descargando()" class="flex-1 py-2.5 px-4 rounded-xl bg-fondo border border-borde hover:bg-borde font-medium transition-colors cursor-pointer disabled:opacity-60">Volver</button>
+          <button type="button" data-accion="confirmar-descarga" [disabled]="descargando()" class="flex-1 py-2.5 px-4 rounded-xl bg-boton text-blanco hover:bg-boton/80 font-semibold transition-colors cursor-pointer disabled:opacity-60">
+            {{ descargando() ? "Descargando…" : "Sí, descargar" }}
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+}
 
 @if (confirmarSalir()){
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-texto/30 backdrop-blur-sm modal-overlay" data-accion="cancelar-salir">

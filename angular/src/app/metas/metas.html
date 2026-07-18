@@ -20,7 +20,7 @@
       }
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
+    <div class="grid grid-cols-1 gap-3 items-start">
       @for (meta of metas(); track meta.idMetaUsuario; let i = $index){
         <div [attr.data-indice]="i"
           class="relative bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-4 pr-14 flex items-start gap-4 transition-opacity"

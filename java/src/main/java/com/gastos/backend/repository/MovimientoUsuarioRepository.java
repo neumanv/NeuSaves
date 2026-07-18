@@ -2,6 +2,7 @@ package com.gastos.backend.repository;
 
 import com.gastos.backend.dto.EstadisticaMes;
 import com.gastos.backend.dto.EstadisticaTipo;
+import com.gastos.backend.dto.MovimientoExport;
 import com.gastos.backend.dto.MovimientoPeriodico;
 import com.gastos.backend.dto.UltimoMovimiento;
 import com.gastos.backend.model.MovimientoUsuario;
@@ -145,6 +146,20 @@ public interface MovimientoUsuarioRepository extends JpaRepository<MovimientoUsu
     List<EstadisticaMes> estadisticasPorMes(@Param("usuario") Long usuario,
                                             @Param("desde") LocalDate desde,
                                             @Param("hasta") LocalDate hasta);
+
+    //Movimientos de un usuario dentro de un rango (un año) en orden cronológico y con el saldo,
+    //para la exportación a Excel de "Descargar cuentas"
+    @Query(value = "SELECT mu.descripcion AS descripcion, m.tipo AS tipo, m.gasto AS gasto, " +
+                   "mu.fecha_movimiento AS fechaMovimiento, mu.cantidad AS cantidad, mu.saldo AS saldo " +
+                   "FROM movimientos_usuarios mu " +
+                   "JOIN movimientos m ON mu.id_movimiento = m.id_movimiento " +
+                   "WHERE mu.id_usuario = :usuario " +
+                   "AND mu.id_periodo IS NULL " +
+                   "AND mu.fecha_movimiento BETWEEN :desde AND :hasta " +
+                   "ORDER BY mu.fecha_movimiento, mu.id_movimiento_usuario", nativeQuery = true)
+    List<MovimientoExport> movimientosDelRango(@Param("usuario") Long usuario,
+                                               @Param("desde") LocalDate desde,
+                                               @Param("hasta") LocalDate hasta);
 
     //Años que tienen algún movimiento (para el filtro de la pantalla de estadísticas), los más recientes primero
     @Query(value = "SELECT DISTINCT EXTRACT(YEAR FROM mu.fecha_movimiento)::int AS anio " +

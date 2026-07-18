@@ -35,7 +35,9 @@
             </p>
           </div>
         </div>
-        <div class="bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-6 text-left min-w-0">
+        <div class="bg-blanco border border-borde rounded-2xl shadow-sm px-6 py-6 text-left min-w-0
+          sm:col-span-2 sm:w-[calc(50%-0.5rem)] sm:mx-auto
+          xl:col-span-1 xl:w-auto xl:mx-0">
           <p class="text-sm font-medium">Ahorrado este mes:</p>
           <p class="font-titulos font-bold mt-2 whitespace-nowrap" [ngClass]="tamanoCantidad()"
             [class.text-peligro]="ahorradoNivel() === 'bajo'"
