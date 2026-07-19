@@ -1,6 +1,10 @@
 package com.gastos.backend.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gastos.backend.dto.CotizacionBolsa;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -15,14 +19,14 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 //Cotizaciones de bolsa para la tarjeta "Bolsa" del panel de usuario.
 //Consulta la API pública de Yahoo Finance (sin clave) desde el servidor y
 //cachea el resultado 10 minutos para no hacer una petición por cada usuario.
 @Service
 public class BolsaService{
+
+    private static final Logger log = LoggerFactory.getLogger(BolsaService.class);
 
     //Índices/valores fijos que se muestran en la tarjeta, en este orden
     private static final Map<String, String> SIMBOLOS = new LinkedHashMap<>();
@@ -37,6 +41,7 @@ public class BolsaService{
     private static final Duration CADUCIDAD_CACHE = Duration.ofMinutes(10);
 
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     //Caché en memoria: última respuesta y cuándo se obtuvo
     private List<CotizacionBolsa> cache = List.of();
@@ -81,32 +86,26 @@ public class BolsaService{
                 return null;
             }
 
-            //Solo hacen falta 3 campos del bloque "meta": se extraen directamente del JSON
             String cuerpo = respuesta.body();
-            Double precio = extraerNumero(cuerpo, "regularMarketPrice");
-            Double cierreAnterior = extraerNumero(cuerpo, "chartPreviousClose");
-            if (precio == null || cierreAnterior == null || cierreAnterior == 0){
+            JsonNode meta = objectMapper.readTree(cuerpo).at("/chart/result/0/meta");
+            if (meta.isMissingNode()){
                 return null;
             }
 
+            JsonNode precioNode = meta.get("regularMarketPrice");
+            JsonNode cierreNode = meta.get("chartPreviousClose");
+            if (precioNode == null || cierreNode == null || cierreNode.asDouble() == 0){
+                return null;
+            }
+
+            double precio = precioNode.asDouble();
+            double cierreAnterior = cierreNode.asDouble();
             double variacion = (precio - cierreAnterior) / cierreAnterior * 100;
-            String moneda = extraerTexto(cuerpo, "currency");
+            String moneda = meta.has("currency") ? meta.get("currency").asText() : "";
             return new CotizacionBolsa(nombre, simbolo, precio, variacion, moneda);
         }catch (Exception e){
-            System.err.println("Error al consultar la cotización de " + simbolo + ": " + e.getMessage());
+            log.error("Error al consultar la cotización de {}: {}", simbolo, e.getMessage());
             return null;
         }
-    }
-
-    //Valor numérico de un campo del JSON ("campo":123.45), o null si no aparece
-    private static Double extraerNumero(String json, String campo){
-        Matcher m = Pattern.compile("\"" + Pattern.quote(campo) + "\"\\s*:\\s*(-?[0-9]+(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)").matcher(json);
-        return m.find() ? Double.valueOf(m.group(1)) : null;
-    }
-
-    //Valor de texto de un campo del JSON ("campo":"EUR"), o cadena vacía si no aparece
-    private static String extraerTexto(String json, String campo){
-        Matcher m = Pattern.compile("\"" + Pattern.quote(campo) + "\"\\s*:\\s*\"([^\"]*)\"").matcher(json);
-        return m.find() ? m.group(1) : "";
     }
 }

@@ -1,7 +1,7 @@
 import{ Component } from "@angular/core";
 import{ RouterLink } from "@angular/router";
 import{ Header } from "../header/header";
-import{ FooterComponent } from "../footer/footer";
+import{ Footer } from "../footer/footer";
 
 //Funcionalidad que se muestra en la rejilla de características de la página principal
 interface Caracteristica{
@@ -15,7 +15,7 @@ interface Caracteristica{
 @Component({
   selector: "app-inicio",
   standalone: true,
-  imports: [RouterLink, Header, FooterComponent],
+  imports: [RouterLink, Header, Footer],
   templateUrl: "./inicio.html",
   styleUrl: "./inicio.scss"
 })
@@ -33,7 +33,7 @@ export class Inicio{
       descripcion: "Automatiza los pagos y cobros que se repiten (nóminas, recibos, suscripciones...) indicando su periodo."
     },
     {
-      icono: "bi-bullseye",
+      icono: "bi-flag-fill",
       titulo: "Metas de ahorro",
       descripcion: "Fija objetivos con su título y descripción para mantener el rumbo y motivarte a ahorrar."
     },

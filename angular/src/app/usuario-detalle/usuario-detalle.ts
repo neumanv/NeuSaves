@@ -4,76 +4,30 @@ import{ CommonModule, isPlatformBrowser } from "@angular/common";
 import{ FormsModule } from "@angular/forms";
 import{ ActivatedRoute, RouterLink } from "@angular/router";
 import{ Header } from "../header/header";
-import{ FooterComponent } from "../footer/footer";
+import{ Footer } from "../footer/footer";
 import{ descifrarId } from "../cifrado";
 import{ Auth, UsuarioSesion } from "../auth";
-
-interface Usuario{
-  idUsuario: number;
-  nombre: string;
-  apellido1: string;
-  apellido2?: string;
-}
+import{ environment } from "../environment";
+import{ Usuario, UltimoMovimiento, TipoMovimiento, Periodo, CotizacionBolsa, MensajeChat, ChatResponse, MovimientoPayload } from "../models";
 
 interface ResumenMes{
   ingresos: number;
   gastos: number;
 }
 
-//Fila de la tabla de últimos movimientos
-interface UltimoMovimiento{
-  descripcion: string;
-  tipo: string;
-  gasto: string;
-  fechaMovimiento: string;
-  cantidad: number;
-}
-
-//Tipo de movimiento del catálogo (Nómina, Regalos, ...) para el desplegable de "Añadir ingreso"
-interface TipoMovimiento{
-  idMovimiento: number;
-  tipo: string;
-  gasto: string;
-}
-
-//Periodo de repetición del catálogo (Diario, Semanal, ...) para los movimientos periódicos
-interface Periodo{
-  idPeriodo: number;
-  periodo: string;
-}
-
-//Cotización de un índice/valor para la tarjeta "Bolsa"
-interface CotizacionBolsa{
-  nombre: string;
-  simbolo: string;
-  precio: number;
-  variacion: number;
-  moneda: string;
-}
-
-//Mensaje del chat FinBot: "user" (el usuario) o "model" (el asistente)
-interface MensajeChat{
-  rol: "user" | "model";
-  texto: string;
-}
-
-interface ChatResponse{
-  respuesta: string;
-}
-
 @Component({
   selector: "app-usuario-detalle",
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, Header, FooterComponent],
+  imports: [CommonModule, FormsModule, RouterLink, Header, Footer],
   templateUrl: "./usuario-detalle.html"
 })
 export class UsuarioDetalle implements OnInit{
-  private readonly apiUrl = "http://localhost:8080/api/usuarios";
-  private readonly movimientosUrl = "http://localhost:8080/api/movimientos-usuarios";
-  private readonly tiposUrl = "http://localhost:8080/api/movimientos";
-  private readonly periodosUrl = "http://localhost:8080/api/periodos";
-  private readonly bolsaUrl = "http://localhost:8080/api/bolsa";
-  private readonly chatUrl = "http://localhost:8080/api/chat";
+  private readonly apiUrl = `${environment.apiUrl}/usuarios`;
+  private readonly movimientosUrl = `${environment.apiUrl}/movimientos-usuarios`;
+  private readonly tiposUrl = `${environment.apiUrl}/movimientos`;
+  private readonly periodosUrl = `${environment.apiUrl}/periodos`;
+  private readonly bolsaUrl = `${environment.apiUrl}/bolsa`;
+  private readonly chatUrl = `${environment.apiUrl}/chat`;
 
   //Token cifrado del usuario en la URL, reutilizado para enlazar a sus metas
   token = "";
@@ -117,7 +71,7 @@ export class UsuarioDetalle implements OnInit{
 
   //Confirmación previa al guardado: el movimiento no se puede borrar después
   confirmacionMovimiento = signal(false);
-  private payloadPendiente: any = null;
+  private payloadPendiente: MovimientoPayload | null = null;
 
   //Movimiento periódico: check, desplegable de periodos y fecha fin
   periodos = signal<Periodo[]>([]);
@@ -415,17 +369,14 @@ export class UsuarioDetalle implements OnInit{
     const hoy = new Date();
     const fecha = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`;
 
-    //Si el movimiento es periódico, el periodo y la fecha fin son obligatorios
+    //Si el movimiento es periódico el periodo es obligatorio; la fecha fin es opcional
     if (this.esPeriodico()){
       if (!this.periodoSel()){
         this.errorMovimiento.set("Selecciona el periodo de repetición.");
         return;
       }
-      if (!this.nuevoMovimiento.fechaFin){
-        this.errorMovimiento.set("Selecciona la fecha fin del movimiento.");
-        return;
-      }
-      if (this.nuevoMovimiento.fechaFin <= fecha){
+      //Sin fecha fin el movimiento se cobra indefinidamente; si se indica debe ser posterior a hoy
+      if (this.nuevoMovimiento.fechaFin && this.nuevoMovimiento.fechaFin <= fecha){
         this.errorMovimiento.set("La fecha fin debe ser posterior a hoy.");
         return;
       }
@@ -439,7 +390,7 @@ export class UsuarioDetalle implements OnInit{
       cantidad: cantidad,
       fechaMovimiento: fecha,
       idPeriodo: this.esPeriodico() ? this.periodoSel()!.idPeriodo : null,
-      fechaFinMovimiento: this.esPeriodico() ? this.nuevoMovimiento.fechaFin : null
+      fechaFinMovimiento: this.esPeriodico() && this.nuevoMovimiento.fechaFin ? this.nuevoMovimiento.fechaFin : null
     };
     this.confirmacionMovimiento.set(true);
   }

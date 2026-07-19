@@ -6,6 +6,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -13,7 +15,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/metas-usuario")
-@CrossOrigin(origins = "http://localhost:4200")
 public class MetaUsuarioController{
 
     //Número máximo de metas que puede tener un usuario
@@ -57,6 +58,7 @@ public class MetaUsuarioController{
     }
 
     //Reordena las metas del usuario: recibe los ids en el nuevo orden y actualiza la columna 'orden'
+    @Transactional
     @PutMapping("/orden")
     public ResponseEntity<Void> reordenar(@RequestParam Long usuario, @RequestBody List<Long> idsEnOrden){
         Map<Long, MetaUsuario> metasPorId = metaUsuarioRepository.findByIdUsuario(usuario).stream()

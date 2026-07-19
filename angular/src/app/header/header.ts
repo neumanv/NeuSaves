@@ -4,6 +4,7 @@ import { FormsModule } from "@angular/forms";
 import { Router, RouterLink } from "@angular/router";
 import { Auth } from "../auth";
 import { Tema } from "../tema";
+import { environment } from "../environment";
 
 @Component({
   selector: "app-header",
@@ -34,7 +35,7 @@ export class Header implements AfterViewInit {
   });
 
   //Ventana de "Descargar cuentas": selección de año y confirmación
-  private readonly exportacionesUrl = "http://localhost:8080/api/exportaciones";
+  private readonly exportacionesUrl = `${environment.apiUrl}/exportaciones`;
   modalDescarga = signal(false);
   pasoConfirmar = signal(false);
   cargandoAnios = signal(false);

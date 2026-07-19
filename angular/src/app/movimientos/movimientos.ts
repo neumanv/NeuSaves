@@ -4,48 +4,21 @@ import{ CommonModule, isPlatformBrowser } from "@angular/common";
 import{ FormsModule } from "@angular/forms";
 import{ ActivatedRoute, RouterLink } from "@angular/router";
 import{ Header } from "../header/header";
-import{ FooterComponent } from "../footer/footer";
+import{ Footer } from "../footer/footer";
 import{ descifrarId } from "../cifrado";
-
-interface Periodo{
-  idPeriodo: number;
-  periodo: string;
-}
-
-//Fila de la lista completa de movimientos
-interface MovimientoLista{
-  descripcion: string;
-  tipo: string;
-  gasto: string;
-  fechaMovimiento: string;
-  cantidad: number;
-}
-
-//Tipo de movimiento del catálogo (Nómina, Regalos, ...) para el filtro por tipo
-interface TipoMovimiento{
-  idMovimiento: number;
-  tipo: string;
-  gasto: string;
-}
-
-//Respuesta paginada del backend (50 movimientos por página)
-interface PaginaMovimientos{
-  contenido: MovimientoLista[];
-  totalPaginas: number;
-  totalElementos: number;
-  pagina: number;
-}
+import{ environment } from "../environment";
+import{ Periodo, TipoMovimiento, MovimientoLista, PaginaMovimientos, MovimientoPayload } from "../models";
 
 @Component({
   selector: "app-movimientos",
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, Header, FooterComponent],
+  imports: [CommonModule, FormsModule, RouterLink, Header, Footer],
   templateUrl: "./movimientos.html"
 })
 export class Movimientos implements OnInit{
-  private readonly movimientosUrl = "http://localhost:8080/api/movimientos-usuarios";
-  private readonly tiposUrl = "http://localhost:8080/api/movimientos";
-  private readonly periodosUrl = "http://localhost:8080/api/periodos";
+  private readonly movimientosUrl = `${environment.apiUrl}/movimientos-usuarios`;
+  private readonly tiposUrl = `${environment.apiUrl}/movimientos`;
+  private readonly periodosUrl = `${environment.apiUrl}/periodos`;
 
   readonly TAMANO_PAGINA = 30;
 
@@ -74,7 +47,7 @@ export class Movimientos implements OnInit{
   errorMovimiento = signal<string | null>(null);
   nuevoMovimiento: { descripcion: string; cantidad: number | null; fechaFin: string } = { descripcion: "", cantidad: null, fechaFin: "" };
   confirmacionMovimiento = signal(false);
-  private payloadPendiente: any = null;
+  private payloadPendiente: MovimientoPayload | null = null;
   periodos = signal<Periodo[]>([]);
   esPeriodico = signal(false);
   periodoAbierto = signal(false);
@@ -391,8 +364,8 @@ export class Movimientos implements OnInit{
     const fecha = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`;
     if (this.esPeriodico()){
       if (!this.periodoSel()){ this.errorMovimiento.set("Selecciona el periodo de repetición."); return; }
-      if (!this.nuevoMovimiento.fechaFin){ this.errorMovimiento.set("Selecciona la fecha fin del movimiento."); return; }
-      if (this.nuevoMovimiento.fechaFin <= fecha){ this.errorMovimiento.set("La fecha fin debe ser posterior a hoy."); return; }
+      //La fecha fin es opcional: sin ella el movimiento se cobra indefinidamente
+      if (this.nuevoMovimiento.fechaFin && this.nuevoMovimiento.fechaFin <= fecha){ this.errorMovimiento.set("La fecha fin debe ser posterior a hoy."); return; }
     }
     this.payloadPendiente = {
       idUsuario: id,
@@ -401,7 +374,7 @@ export class Movimientos implements OnInit{
       cantidad,
       fechaMovimiento: fecha,
       idPeriodo: this.esPeriodico() ? this.periodoSel()!.idPeriodo : null,
-      fechaFinMovimiento: this.esPeriodico() ? this.nuevoMovimiento.fechaFin : null
+      fechaFinMovimiento: this.esPeriodico() && this.nuevoMovimiento.fechaFin ? this.nuevoMovimiento.fechaFin : null
     };
     this.confirmacionMovimiento.set(true);
   }

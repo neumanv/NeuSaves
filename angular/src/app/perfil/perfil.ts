@@ -4,9 +4,12 @@ import{ CommonModule, isPlatformBrowser, Location } from "@angular/common";
 import{ FormsModule } from "@angular/forms";
 import{ Router } from "@angular/router";
 import{ Header } from "../header/header";
-import{ FooterComponent } from "../footer/footer";
+import{ Footer } from "../footer/footer";
 import{ PREFIJOS, Pais } from "../prefijos";
 import{ Auth, UsuarioSesion } from "../auth";
+import{ environment } from "../environment";
+import{ MovimientoPeriodico, Periodo } from "../models";
+import{ manana } from "../utils/fecha";
 
 //Datos editables del perfil (mismos campos que el registro, sin contraseña)
 interface DatosPerfil{
@@ -21,39 +24,19 @@ interface DatosPerfil{
   sexo: string;
 }
 
-//Movimiento periódico del usuario (plantilla) para la pestaña "Mov. periódicos"
-interface MovimientoPeriodico{
-  idMovimientoUsuario: number;
-  descripcion: string;
-  tipo: string;
-  gasto: string;
-  cantidad: number;
-  idPeriodo: number;
-  periodo: string;
-  diaCobro: number | null;
-  mesCobro: number | null;
-  fechaFinMovimiento: string;
-}
-
-//Periodo de repetición del catálogo (Diario, Semanal, ...) para el desplegable del modal
-interface Periodo{
-  idPeriodo: number;
-  periodo: string;
-}
-
 type Pestana = "datos" | "contrasena" | "periodicos";
 
 @Component({
   selector: "app-perfil",
   standalone: true,
-  imports: [CommonModule, FormsModule, Header, FooterComponent],
+  imports: [CommonModule, FormsModule, Header, Footer],
   templateUrl: "./perfil.html"
 })
 export class Perfil implements OnInit, OnDestroy{
-  private readonly usuariosUrl = "http://localhost:8080/api/usuarios";
-  private readonly authUrl = "http://localhost:8080/api/auth";
-  private readonly movimientosUrl = "http://localhost:8080/api/movimientos-usuarios";
-  private readonly periodosUrl = "http://localhost:8080/api/periodos";
+  private readonly usuariosUrl = `${environment.apiUrl}/usuarios`;
+  private readonly authUrl = `${environment.apiUrl}/auth`;
+  private readonly movimientosUrl = `${environment.apiUrl}/movimientos-usuarios`;
+  private readonly periodosUrl = `${environment.apiUrl}/periodos`;
   readonly prefijos = PREFIJOS;
 
   //Nombres para los desplegables del día de cobro de los movimientos periódicos
@@ -122,8 +105,11 @@ export class Perfil implements OnInit, OnDestroy{
   periodoEdit = "";
   diaCobroEdit = 1;
   mesCobroEdit = 1;
+  fechaFinEdit = "";
   guardandoPeriodico = signal(false);
   errorDiaCobro = signal<string | null>(null);
+  //Fecha mínima seleccionable para la fecha fin (mañana)
+  readonly manana = manana();
 
   //Modal de confirmación para eliminar un movimiento periódico
   eliminandoPeriodico = signal<MovimientoPeriodico | null>(null);
@@ -266,6 +252,8 @@ export class Perfil implements OnInit, OnDestroy{
     this.periodoEdit = m.periodo;
     this.diaCobroEdit = m.diaCobro ?? 1;
     this.mesCobroEdit = m.mesCobro ?? 1;
+    //La fecha fin llega como YYYY-MM-DD (o null si el movimiento no tiene fin)
+    this.fechaFinEdit = m.fechaFinMovimiento ? m.fechaFinMovimiento.substring(0, 10) : "";
     this.errorDiaCobro.set(null);
     this.editandoPeriodico.set(m);
   }
@@ -297,13 +285,19 @@ export class Perfil implements OnInit, OnDestroy{
     if (!usuario || !m || !periodo){
       return;
     }
+    //La fecha fin es opcional; si se indica debe ser posterior a hoy
+    if (this.fechaFinEdit && this.fechaFinEdit < this.manana){
+      this.errorDiaCobro.set("La fecha fin debe ser posterior a hoy.");
+      return;
+    }
     this.guardandoPeriodico.set(true);
     this.errorDiaCobro.set(null);
     this.http.put(`${this.movimientosUrl}/periodicos/${m.idMovimientoUsuario}`,{
       idUsuario: usuario.idUsuario,
       idPeriodo: periodo.idPeriodo,
       diaCobro: this.periodoEdit === "Diario" ? null : this.diaCobroEdit,
-      mesCobro: this.periodoEdit === "Anual" ? this.mesCobroEdit : null
+      mesCobro: this.periodoEdit === "Anual" ? this.mesCobroEdit : null,
+      fechaFin: this.fechaFinEdit || null
     }).subscribe({
       next: () =>{
         this.guardandoPeriodico.set(false);

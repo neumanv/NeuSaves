@@ -4,26 +4,19 @@ import{ CommonModule, isPlatformBrowser } from "@angular/common";
 import{ FormsModule } from "@angular/forms";
 import{ ActivatedRoute, RouterLink } from "@angular/router";
 import{ Header } from "../header/header";
-import{ FooterComponent } from "../footer/footer";
+import{ Footer } from "../footer/footer";
 import{ descifrarId } from "../cifrado";
-
-interface Meta{
-  idMetaUsuario: number;
-  idUsuario: number;
-  titulo: string;
-  descripcion: string;
-  completado: string; //'S' | 'N'
-  orden?: number;
-}
+import{ environment } from "../environment";
+import{ Meta } from "../models";
 
 @Component({
   selector: "app-metas",
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, Header, FooterComponent],
+  imports: [CommonModule, FormsModule, RouterLink, Header, Footer],
   templateUrl: "./metas.html"
 })
 export class Metas implements OnInit{
-  private readonly metasUrl = "http://localhost:8080/api/metas-usuario";
+  private readonly metasUrl = `${environment.apiUrl}/metas-usuario`;
 
   //Número máximo de metas que puede tener un usuario
   readonly MAX_METAS = 13;

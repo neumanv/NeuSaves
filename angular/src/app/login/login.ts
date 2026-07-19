@@ -1,12 +1,14 @@
-import{ Component, OnInit, AfterViewInit, ElementRef, Renderer2, Inject, PLATFORM_ID, signal, computed } from "@angular/core";
-import{ HttpClient, HttpErrorResponse } from "@angular/common/http";
+import{ Component, OnInit, AfterViewInit, ElementRef, Renderer2, Inject, PLATFORM_ID, signal, computed, inject } from "@angular/core";
+import{ HttpErrorResponse } from "@angular/common/http";
 import{ CommonModule, isPlatformBrowser } from "@angular/common";
 import{ FormsModule } from "@angular/forms";
 import{ Router } from "@angular/router";
 import{ Header } from "../header/header";
-import{ FooterComponent } from "../footer/footer";
+import{ Footer } from "../footer/footer";
 import{ PREFIJOS, Pais } from "../prefijos";
 import{ Auth, UsuarioSesion } from "../auth";
+import{ AuthApiService } from "../services/auth-api.service";
+import{ normaliza, emailValido, dniNieValido } from "../utils/validators";
 
 interface NuevoUsuario{
   email: string;
@@ -27,12 +29,12 @@ type Modo = "login" | "registro" | "verificar" | "recuperar";
 @Component({
   selector: "app-login",
   standalone: true,
-  imports: [CommonModule, FormsModule, Header, FooterComponent],
+  imports: [CommonModule, FormsModule, Header, Footer],
   templateUrl: "./login.html",
   styleUrl: "./login.scss"
 })
 export class Login implements OnInit, AfterViewInit{
-  private readonly apiUrl = "http://localhost:8080/api/auth";
+  private readonly authApi = inject(AuthApiService);
   readonly prefijos = PREFIJOS;
 
   modo = signal<Modo>("login");
@@ -69,16 +71,16 @@ export class Login implements OnInit, AfterViewInit{
   busquedaPrefijo = signal("");
   paisSeleccionado = signal<Pais | null>(this.paisPorDefecto());
   prefijosFiltrados = computed(() =>{
-    const q = this.normaliza(this.busquedaPrefijo());
+    const q = normaliza(this.busquedaPrefijo());
     if (!q){
       return this.prefijos;
     }
     return this.prefijos.filter(
-      (p) => this.normaliza(p.name).includes(q) || p.phoneCode.includes(q)
+      (p) => normaliza(p.name).includes(q) || p.phoneCode.includes(q)
     );
   });
 
-  constructor(private http: HttpClient, private router: Router, private auth: Auth, private el: ElementRef<HTMLElement>, private renderer: Renderer2, @Inject(PLATFORM_ID) private platformId: Object){}
+  constructor(private router: Router, private auth: Auth, private el: ElementRef<HTMLElement>, private renderer: Renderer2, @Inject(PLATFORM_ID) private platformId: Object){}
 
   //Un único manejador registra en TypeScript todos los clics de la plantilla (delegación por data-accion)
   ngAfterViewInit(): void{
@@ -150,13 +152,13 @@ export class Login implements OnInit, AfterViewInit{
     this.errorRecuperar.set(null);
     this.avisoRecuperar.set(null);
 
-    if (!this.emailValido(email)){
+    if (!emailValido(email)){
       this.errorRecuperar.set("Introduce un email válido.");
       return;
     }
 
     this.recuperando.set(true);
-    this.http.post<void>(`${this.apiUrl}/recuperar`,{ email }).subscribe({
+    this.authApi.recuperar(email).subscribe({
       next: () =>{
         this.recuperando.set(false);
         this.avisoRecuperar.set("Te hemos enviado una nueva contraseña a tu correo.");
@@ -193,8 +195,8 @@ export class Login implements OnInit, AfterViewInit{
 
     this.entrando.set(true);
     this.errorLogin.set(null);
-    this.http.post<UsuarioSesion>(`${this.apiUrl}/login`,{ email, contrasena }).subscribe({
-      next: (usuario) =>{
+    this.authApi.login(email, contrasena).subscribe({
+      next: (usuario: UsuarioSesion) =>{
         this.entrando.set(false);
         this.entrar(usuario);
       },
@@ -233,7 +235,7 @@ export class Login implements OnInit, AfterViewInit{
       return;
     }
 
-    if (!this.emailValido(u.email.trim())){
+    if (!emailValido(u.email.trim())){
       this.errorCrear.set("El email no es válido. Formato: nombre@dominio.ext");
       return;
     }
@@ -243,7 +245,7 @@ export class Login implements OnInit, AfterViewInit{
       return;
     }
 
-    if (!this.dniNieValido(u.dni)){
+    if (!dniNieValido(u.dni)){
       this.errorCrear.set("El DNI/NIE no es válido. Formato: 8 cifras + letra (DNI) o X/Y/Z + 7 cifras + letra (NIE).");
       return;
     }
@@ -273,8 +275,8 @@ export class Login implements OnInit, AfterViewInit{
 
     this.guardando.set(true);
     this.errorCrear.set(null);
-    this.http.post<UsuarioSesion>(`${this.apiUrl}/registro`, payload).subscribe({
-      next: (creado) =>{
+    this.authApi.registro(payload).subscribe({
+      next: (creado: UsuarioSesion) =>{
         this.guardando.set(false);
         this.irAVerificar(creado.email ?? payload.email, "Te hemos enviado un código de 5 números a tu correo. Introdúcelo para activar la cuenta.");
       },
@@ -305,8 +307,8 @@ export class Login implements OnInit, AfterViewInit{
 
     this.verificando.set(true);
     this.errorVerificar.set(null);
-    this.http.post<UsuarioSesion>(`${this.apiUrl}/verificar`,{ email: this.emailPendiente(), codigo }).subscribe({
-      next: (usuario) =>{
+    this.authApi.verificar(this.emailPendiente(), codigo).subscribe({
+      next: (usuario: UsuarioSesion) =>{
         this.verificando.set(false);
         this.entrar(usuario);
       },
@@ -325,12 +327,12 @@ export class Login implements OnInit, AfterViewInit{
   reenviarCodigo(): void{
     this.reenviando.set(true);
     this.errorVerificar.set(null);
-    this.http.post<void>(`${this.apiUrl}/reenviar`,{ email: this.emailPendiente() }).subscribe({
+    this.authApi.reenviar(this.emailPendiente()).subscribe({
       next: () =>{
         this.reenviando.set(false);
         this.avisoVerificar.set("Te hemos enviado un código nuevo a tu correo.");
       },
-      error: (err) =>{
+      error: (err: HttpErrorResponse) =>{
         console.error("Error al reenviar el código:", err);
         this.reenviando.set(false);
         this.errorVerificar.set("No se pudo reenviar el código.");
@@ -367,9 +369,6 @@ export class Login implements OnInit, AfterViewInit{
     return PREFIJOS.find((p) => p.code === "ES") ?? null;
   }
 
-  private normaliza(texto: string): string{
-    return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-  }
 
   //El sexo se guarda también en un signal: sin él (app zoneless) la vista no se re-renderiza al pulsar
   elegirSexo(valor: string): void{
@@ -381,10 +380,6 @@ export class Login implements OnInit, AfterViewInit{
     this.verContrasena.update((visible) => !visible);
   }
 
-  //Valida el formato del email
-  private emailValido(valor: string): boolean{
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor);
-  }
 
   togglePrefijo(): void{
     this.busquedaPrefijo.set("");
@@ -409,19 +404,4 @@ export class Login implements OnInit, AfterViewInit{
     this.nuevoUsuario[campo] = limpio;
   }
 
-  //Valida un DNI o NIE español (formato + letra de control)
-  private dniNieValido(valor: string): boolean{
-    const v = valor.toUpperCase().trim();
-    const letras = "TRWAGMYFPDXBNJZSQVHLCKE";
-    let numero: number;
-    if (/^[0-9]{8}[A-Z]$/.test(v)){
-      numero = parseInt(v.substring(0, 8), 10);
-    } else if (/^[XYZ][0-9]{7}[A-Z]$/.test(v)){
-      const prefijoNie ={ X: "0", Y: "1", Z: "2" }[v[0]]!;
-      numero = parseInt(prefijoNie + v.substring(1, 8), 10);
-    } else{
-      return false;
-    }
-    return letras[numero % 23] === v[v.length - 1];
-  }
 }

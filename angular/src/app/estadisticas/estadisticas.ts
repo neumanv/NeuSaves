@@ -4,32 +4,10 @@ import{ CommonModule, isPlatformBrowser } from "@angular/common";
 import{ FormsModule } from "@angular/forms";
 import{ ActivatedRoute, RouterLink } from "@angular/router";
 import{ Header } from "../header/header";
-import{ FooterComponent } from "../footer/footer";
+import{ Footer } from "../footer/footer";
 import{ descifrarId } from "../cifrado";
-
-//Agregado por tipo de movimiento que devuelve el backend
-interface EstadisticaTipo{
-  tipo: string;
-  gasto: string;
-  total: number;
-  cantidad: number;
-}
-
-//Agregado por mes que devuelve el backend
-interface EstadisticaMes{
-  mes: string;       //'YYYY-MM'
-  ingresos: number;
-  gastos: number;
-}
-
-interface EstadisticasDatos{
-  totalIngresos: number;
-  totalGastos: number;
-  balance: number;
-  numeroMovimientos: number;
-  porTipo: EstadisticaTipo[];
-  porMes: EstadisticaMes[];
-}
+import{ environment } from "../environment";
+import{ EstadisticaTipo, EstadisticaMes, EstadisticasDatos } from "../models";
 
 //Barra horizontal (por tipo o por frecuencia) ya preparada para pintar
 interface Barra{
@@ -51,11 +29,11 @@ interface BarraMes{
 @Component({
   selector: "app-estadisticas",
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, Header, FooterComponent],
+  imports: [CommonModule, FormsModule, RouterLink, Header, Footer],
   templateUrl: "./estadisticas.html"
 })
 export class Estadisticas implements OnInit{
-  private readonly movimientosUrl = "http://localhost:8080/api/movimientos-usuarios";
+  private readonly movimientosUrl = `${environment.apiUrl}/movimientos-usuarios`;
 
   token = "";
   idUsuario = signal<number | null>(null);

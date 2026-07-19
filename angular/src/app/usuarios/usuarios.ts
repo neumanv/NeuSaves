@@ -4,21 +4,11 @@ import{ CommonModule, isPlatformBrowser } from "@angular/common";
 import{ FormsModule } from "@angular/forms";
 import{ Router } from "@angular/router";
 import{ Header } from "../header/header";
-import{ FooterComponent } from "../footer/footer";
+import{ Footer } from "../footer/footer";
 import{ cifrarId } from "../cifrado";
 import{ Auth } from "../auth";
-
-interface Usuario{
-  idUsuario: number;
-  nombre: string;
-  apellido1: string;
-  apellido2?: string;
-  prefijo?: string;
-  telefono1?: string;
-  telefono2?: string;
-  dni?: string;
-  sexo?: string;
-}
+import{ environment } from "../environment";
+import{ Usuario } from "../models";
 
 //Subusuarios
 interface NuevoUsuario{
@@ -31,12 +21,12 @@ interface NuevoUsuario{
 @Component({
   selector: "app-usuarios",
   standalone: true,
-  imports: [CommonModule, FormsModule, Header, FooterComponent],
+  imports: [CommonModule, FormsModule, Header, Footer],
   templateUrl: "./usuarios.html",
   styleUrl: "./usuarios.scss"
 })
 export class Usuarios implements OnInit, AfterViewInit{
-  private readonly apiUrl = "http://localhost:8080/api/usuarios";
+  private readonly apiUrl = `${environment.apiUrl}/usuarios`;
   readonly maxUsuarios = 4;
 
   //Usuario principal

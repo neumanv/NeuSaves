@@ -335,9 +335,10 @@
               }
             </div>
             <div class="flex-1">
-              <label class="block text-sm font-medium mb-1">Fecha fin *</label>
+              <label class="block text-sm font-medium mb-1">Fecha fin (opcional)</label>
               <input name="fechaFinMovimiento" type="date" [(ngModel)]="nuevoMovimiento.fechaFin" [min]="manana"
                 class="w-full bg-fondo border border-borde rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-boton cursor-pointer" />
+              <p class="text-xs text-boton mt-1">Si la dejas vacía, se repetirá indefinidamente.</p>
             </div>
           </div>
         }
@@ -379,7 +380,7 @@
         @if (esPeriodico()){
           <p class="text-sm mt-3">
             Este {{ esGasto() ? "gasto" : "ingreso" }} es periódico: {{ esGasto() ? "se cobrará" : "se ingresará" }} automáticamente
-            {{ textoCobroPeriodico() }} hasta el {{ nuevoMovimiento.fechaFin | date:'dd/MM/yyyy' }}.
+            {{ textoCobroPeriodico() }}@if (nuevoMovimiento.fechaFin){ hasta el {{ nuevoMovimiento.fechaFin | date:'dd/MM/yyyy' }}}@else{ sin fecha de fin}.
             Podrás cambiar la periodicidad y el día de cobro, o eliminarlo, desde tu perfil, en la pestaña «Mov. periódicos».
           </p>
         }

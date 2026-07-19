@@ -91,11 +91,15 @@ public class MovimientoPeriodicoService{
         //Diario: no necesita día de cobro, se cobra todos los días
     }
 
-    //Valida y aplica el periodo y el día de cobro elegidos por el usuario. Devuelve false si no son válidos.
+    //Valida y aplica el periodo, el día de cobro y la fecha fin elegidos por el usuario. Devuelve false si no son válidos.
     //El día máximo en mensual/2 meses es el 30 porque no todos los meses tienen día 31.
-    public boolean aplicarCambio(MovimientoUsuario plantilla, Long idPeriodo, Integer dia, Integer mes){
+    //La fecha fin es opcional: si es null el movimiento se cobra indefinidamente; si se indica debe ser posterior a hoy.
+    public boolean aplicarCambio(MovimientoUsuario plantilla, Long idPeriodo, Integer dia, Integer mes, LocalDate fechaFin){
         String periodo = nombrePeriodo(idPeriodo);
         if (periodo == null){
+            return false;
+        }
+        if (fechaFin != null && !fechaFin.isAfter(LocalDate.now())){
             return false;
         }
 
@@ -136,6 +140,8 @@ public class MovimientoPeriodicoService{
         plantilla.setIdPeriodo(idPeriodo);
         plantilla.setDiaCobro(diaFinal);
         plantilla.setMesCobro(mesFinal);
+        //null = sin fecha de fin: los cobros se generan indefinidamente
+        plantilla.setFechaFinMovimiento(fechaFin);
         return true;
     }
 

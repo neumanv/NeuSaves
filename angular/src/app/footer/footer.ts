@@ -7,6 +7,6 @@ import { CommonModule } from "@angular/common";
   imports: [CommonModule],
   templateUrl: "./footer.html",
 })
-export class FooterComponent {
+export class Footer {
   currentYear: number = new Date().getFullYear();
 }

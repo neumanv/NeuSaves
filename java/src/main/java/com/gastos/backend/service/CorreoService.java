@@ -76,7 +76,7 @@ public class CorreoService{
     }
 
     public void enviarNuevaContrasena(String email, String contrasena){
-        log.info("Nueva contraseña para {}: {}", email, contrasena);
+        log.info("Nueva contraseña generada para {}", email);
 
         SimpleMailMessage mensaje = new SimpleMailMessage();
         mensaje.setFrom("no-reply@neusaves.local");

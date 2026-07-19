@@ -3,15 +3,15 @@ spring:
     name: java
 
   datasource:
-    url: jdbc:postgresql://base-datos:5432/gastos_db
-    username: usuario_gastos
-    password: clave_secreta
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://base-datos:5432/gastos_db}
+    username: ${SPRING_DATASOURCE_USERNAME:usuario_gastos}
+    password: ${SPRING_DATASOURCE_PASSWORD:clave_secreta}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: ${JPA_SHOW_SQL:false}
 
   #Servidor SMTP para los correos de verificación.
   #En desarrollo apunta a Mailpit (docker-compose); en producción se cambia por variables de entorno.
@@ -31,6 +31,9 @@ spring:
 groq:
   api-key: ${GROQ_API_KEY:}
   model: ${GROQ_MODEL:llama-3.3-70b-versatile}
+
+cors:
+  origins: ${CORS_ORIGINS:http://localhost:4200,http://localhost:4300}
 
 #Límite de peticiones por IP para el chat, para proteger la cuota de Groq frente al abuso.
 limite:
