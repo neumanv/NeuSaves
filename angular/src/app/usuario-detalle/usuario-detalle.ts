@@ -179,13 +179,13 @@ export class UsuarioDetalle implements OnInit{
       ("-" + this.gastosTexto()).length,
       this.ahorradoTexto().length
     );
-    if (largo >= 11){
-      return "text-2xl xl:text-lg";
+    if (largo >= 10){
+      return "text-xl sm:text-3xl xl:text-xl";
     }
-    if (largo >= 9){
-      return "text-3xl xl:text-xl";
+    if (largo >= 8){
+      return "text-2xl sm:text-4xl xl:text-2xl";
     }
-    return "text-4xl xl:text-2xl";
+    return "text-3xl sm:text-5xl xl:text-3xl";
   });
 
   ahorradoNivel = computed<"bajo" | "medio" | "alto">(() =>{
@@ -535,7 +535,11 @@ export class UsuarioDetalle implements OnInit{
       },
       error: (err) =>{
         console.error("Error en el chat:", err);
-        this.chatMensajes.update((lista) => [...lista, { rol: "model", texto: "Ahora mismo no puedo responder. Inténtalo de nuevo en un momento." }]);
+        //429: se ha superado el límite de peticiones por IP; el backend envía el aviso concreto
+        const texto = err?.status === 429
+          ? (err?.error?.respuesta ?? "Has enviado demasiados mensajes seguidos. Espera un momento y vuelve a intentarlo.")
+          : "Ahora mismo no puedo responder. Inténtalo de nuevo en un momento.";
+        this.chatMensajes.update((lista) => [...lista, { rol: "model", texto }]);
         this.chatCargando.set(false);
         this.guardarChat();
         this.desplazarChat();

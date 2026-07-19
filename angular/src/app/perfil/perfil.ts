@@ -147,7 +147,7 @@ export class Perfil implements OnInit, OnDestroy{
     //El usuario a editar es el subusuario cuyo panel se está viendo o, si no hay, el principal
     const usuario = this.auth.usuarioEnGestion();
     if (!usuario){
-      this.router.navigate(["/"]);
+      this.router.navigate(["/acceso"]);
       return;
     }
     this.usuarioEditando = usuario;

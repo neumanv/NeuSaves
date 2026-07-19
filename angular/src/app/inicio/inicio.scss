@@ -1,0 +1,9 @@
+//La página principal es pública (sin sesión) y forma parte del flujo de entrada junto al login:
+//se fuerza siempre la paleta clara aquí, sin importar la preferencia guardada en el resto de la app.
+:host{
+  --color-fondo: #F2F2F2;
+  --color-blanco: #FFFFFF;
+  --color-borde: #E6E6E6;
+  --color-texto: #000000;
+  --color-boton: #999999;
+}

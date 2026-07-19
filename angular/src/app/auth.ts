@@ -92,5 +92,5 @@ export const authGuard: CanActivateFn = () =>{
   if (!isPlatformBrowser(platformId)){
     return false;
   }
-  return auth.estaLogeado() ? true : router.createUrlTree(["/"]);
+  return auth.estaLogeado() ? true : router.createUrlTree(["/acceso"]);
 };

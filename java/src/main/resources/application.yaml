@@ -31,3 +31,9 @@ spring:
 groq:
   api-key: ${GROQ_API_KEY:}
   model: ${GROQ_MODEL:llama-3.3-70b-versatile}
+
+#Límite de peticiones por IP para el chat, para proteger la cuota de Groq frente al abuso.
+limite:
+  chat:
+    peticiones: ${LIMITE_CHAT_PETICIONES:15}
+    ventana-segundos: ${LIMITE_CHAT_VENTANA_SEGUNDOS:60}

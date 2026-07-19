@@ -65,6 +65,7 @@ public class UsuarioController{
 
         usuario.setEmail(null);
         usuario.setContrasena(null);
+        usuario.setDni(null);
         usuario.setVerificado(false);
         usuario.setCodigoVerificacion(null);
 
@@ -95,15 +96,13 @@ public class UsuarioController{
             return ResponseEntity.ok(usuarioRepository.save(usuario));
         }
 
-        //El email NO se cambia aquí: pasa por el flujo de confirmación por código (/api/auth/cambiar-email).
-        //Así se conserva el correo actual hasta que el usuario confirma el nuevo desde su propia bandeja.
+        //El email y el DNI no se cambian aquí: son inmutables tras el registro.
         usuario.setNombre(datos.getNombre().trim());
         usuario.setApellido1(datos.getApellido1().trim());
         usuario.setApellido2(datos.getApellido2());
         usuario.setPrefijo(datos.getPrefijo());
         usuario.setTelefono1(datos.getTelefono1());
         usuario.setTelefono2(datos.getTelefono2());
-        usuario.setDni(datos.getDni());
         usuario.setSexo(datos.getSexo());
 
         return ResponseEntity.ok(usuarioRepository.save(usuario));

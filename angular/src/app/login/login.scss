@@ -1,3 +1,13 @@
+//Inicio de sesión, registro, verificación y recuperación no admiten modo nocturno:
+//se fuerza siempre la paleta clara aquí, sin importar la preferencia guardada en el resto de la app.
+:host{
+  --color-fondo: #F2F2F2;
+  --color-blanco: #FFFFFF;
+  --color-borde: #E6E6E6;
+  --color-texto: #000000;
+  --color-boton: #999999;
+}
+
 .tarjeta-login{
   animation: tarjeta-pop 0.2s ease-out;
 }

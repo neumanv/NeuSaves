@@ -1,20 +1,24 @@
 import { AfterViewInit, Component, ElementRef, Renderer2, computed, input, signal } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { FormsModule } from "@angular/forms";
-import { Router } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { Auth } from "../auth";
 import { Tema } from "../tema";
 
 @Component({
   selector: "app-header",
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   templateUrl: "./header.html"
 })
 export class Header implements AfterViewInit {
   mostrarPerfil = input(false);
   mostrarEditarPerfil = input(true);
   mostrarCambiarPerfil = input(true);
+  //Pantallas sin sesión (login, registro...) no admiten modo nocturno: fuerza el logo claro
+  forzarClaro = input(false);
+  //Solo en la pantalla de acceso: el logo/nombre lleva a la web de presentación
+  enlaceInicio = input(false);
   menuAbierto = signal(false);
   confirmarSalir = signal(false);
 

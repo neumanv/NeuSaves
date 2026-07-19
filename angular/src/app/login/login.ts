@@ -283,8 +283,10 @@ export class Login implements OnInit, AfterViewInit{
         this.guardando.set(false);
         if (err.status === 409){
           this.errorCrear.set("El email ya está registrado. Prueba a iniciar sesión.");
+        }else if (err.status === 422){
+          this.errorCrear.set("La persona ya esta registrada.");
         }else if (err.status === 400){
-          this.errorCrear.set("No se pudo crear la cuenta. Revisa los datos (el DNI no puede repetirse).");
+          this.errorCrear.set("No se pudo crear la cuenta. Revisa los datos.");
         }else{
           this.errorCrear.set("Conexión fallida");
         }

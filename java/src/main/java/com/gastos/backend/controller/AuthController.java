@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.dao.DataIntegrityViolationException;
+
 import java.security.SecureRandom;
 
 @RestController
@@ -68,12 +70,31 @@ public class AuthController{
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
+        //DNI obligatorio y no puede repetirse (se distingue del email duplicado con otro código de estado)
+        String dni = usuario.getDni() == null ? "" : usuario.getDni().trim();
+        if (dni.isEmpty()){
+            return ResponseEntity.badRequest().build();
+        }
+        if (usuarioRepository.existsByDniIgnoreCase(dni)){
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).build();
+        }
+        usuario.setDni(dni);
+
         usuario.setVerificado(false);
         usuario.setCodigoVerificacion(generarCodigo());
         //Nunca se guarda la contraseña en claro: se cifra con BCrypt
         usuario.setContrasena(encoder.encode(contrasena));
 
-        Usuario guardado = usuarioRepository.save(usuario);
+        Usuario guardado;
+        try {
+            guardado = usuarioRepository.save(usuario);
+        } catch (DataIntegrityViolationException ex){
+            String msg = ex.getMessage() == null ? "" : ex.getMessage().toLowerCase();
+            if (msg.contains("dni")){
+                return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).build();
+            }
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
         correoService.enviarCodigoVerificacion(guardado.getEmail(), guardado.getCodigoVerificacion());
         return ResponseEntity.status(HttpStatus.CREATED).body(guardado);
     }
