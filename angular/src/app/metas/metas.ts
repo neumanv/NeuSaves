@@ -6,6 +6,7 @@ import{ ActivatedRoute, RouterLink } from "@angular/router";
 import{ Header } from "../header/header";
 import{ Footer } from "../footer/footer";
 import{ descifrarId } from "../cifrado";
+import{ Auth } from "../auth";
 import{ environment } from "../environment";
 import{ Meta } from "../models";
 
@@ -39,7 +40,13 @@ export class Metas implements OnInit{
   metaABorrar = signal<Meta | null>(null);
   borrando = signal(false);
 
-  constructor(private http: HttpClient, private ruta: ActivatedRoute, @Inject(PLATFORM_ID) private platformId: Object){}
+  constructor(private http: HttpClient, private ruta: ActivatedRoute, private auth: Auth, @Inject(PLATFORM_ID) private platformId: Object){}
+
+  //Indica si el id es un subusuario (distinto del principal autenticado)
+  private esSubusuario(id: number): boolean{
+    const principal = this.auth.usuario();
+    return !!principal && id !== principal.idUsuario;
+  }
 
   ngOnInit(): void{
     if (!isPlatformBrowser(this.platformId)){
@@ -59,7 +66,8 @@ export class Metas implements OnInit{
     if (id === null){
       return;
     }
-    this.http.get<Meta[]>(`${this.metasUrl}?usuario=${id}`).subscribe({
+    const param = this.esSubusuario(id) ? `?usuario=${id}` : "";
+    this.http.get<Meta[]>(`${this.metasUrl}${param}`).subscribe({
       next: (metas) => this.metas.set(metas ?? []),
       error: (err) => console.error("Error al cargar las metas:", err)
     });
@@ -135,7 +143,8 @@ export class Metas implements OnInit{
       return;
     }
     const ids = this.metas().map((m) => m.idMetaUsuario);
-    this.http.put(`${this.metasUrl}/orden?usuario=${id}`, ids).subscribe({
+    const param = this.esSubusuario(id) ? `?usuario=${id}` : "";
+    this.http.put(`${this.metasUrl}/orden${param}`, ids).subscribe({
       error: (err) => console.error("Error al guardar el orden:", err)
     });
   }
@@ -192,7 +201,11 @@ export class Metas implements OnInit{
     }
 
     this.guardando.set(true);
-    this.http.post<Meta>(this.metasUrl, { idUsuario: id, titulo, descripcion }).subscribe({
+    const payload: { idUsuario?: number; titulo: string; descripcion: string } = { titulo, descripcion };
+    if (this.esSubusuario(id)){
+      payload.idUsuario = id;
+    }
+    this.http.post<Meta>(this.metasUrl, payload).subscribe({
       next: (creada) =>{
         //La nueva meta se añade al final (así la coloca el backend)
         this.metas.update((lista) => [...lista, creada]);

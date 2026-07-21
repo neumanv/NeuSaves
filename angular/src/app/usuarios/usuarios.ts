@@ -115,7 +115,7 @@ export class Usuarios implements OnInit, AfterViewInit{
     }
 
     this.cargando.set(true);
-    this.http.get<Usuario[]>(`${this.apiUrl}?principal=${logeado.idUsuario}`).subscribe({
+    this.http.get<Usuario[]>(this.apiUrl).subscribe({
       next: (usuarios) =>{
         this.usuarios.set(usuarios);
         this.error.set(null);

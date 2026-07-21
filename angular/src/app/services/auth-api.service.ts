@@ -2,15 +2,15 @@ import { Injectable, inject } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { Observable } from "rxjs";
 import { environment } from "../environment";
-import { UsuarioSesion } from "../auth";
+import { UsuarioSesion, LoginResponse } from "../auth";
 
 @Injectable({ providedIn: "root" })
 export class AuthApiService {
   private readonly http = inject(HttpClient);
   private readonly url = `${environment.apiUrl}/auth`;
 
-  login(email: string, contrasena: string): Observable<UsuarioSesion> {
-    return this.http.post<UsuarioSesion>(`${this.url}/login`, { email, contrasena });
+  login(email: string, contrasena: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.url}/login`, { email, contrasena });
   }
 
   registro(payload: any): Observable<UsuarioSesion> {
@@ -29,19 +29,19 @@ export class AuthApiService {
     return this.http.post<void>(`${this.url}/recuperar`, { email });
   }
 
-  cambiarContrasena(idUsuario: number, contrasenaActual: string, contrasenaNueva: string): Observable<void> {
-    return this.http.post<void>(`${this.url}/cambiar-contrasena`, { idUsuario, contrasenaActual, contrasenaNueva });
+  cambiarContrasena(contrasenaActual: string, contrasenaNueva: string): Observable<void> {
+    return this.http.post<void>(`${this.url}/cambiar-contrasena`, { contrasenaActual, contrasenaNueva });
   }
 
-  solicitarCambioEmail(idUsuario: number, email: string): Observable<void> {
-    return this.http.post<void>(`${this.url}/cambiar-email/solicitar`, { idUsuario, email });
+  solicitarCambioEmail(email: string): Observable<void> {
+    return this.http.post<void>(`${this.url}/cambiar-email/solicitar`, { email });
   }
 
-  confirmarCambioEmail(idUsuario: number, codigo: string): Observable<UsuarioSesion> {
-    return this.http.post<UsuarioSesion>(`${this.url}/cambiar-email/confirmar`, { idUsuario, codigo });
+  confirmarCambioEmail(codigo: string): Observable<UsuarioSesion> {
+    return this.http.post<UsuarioSesion>(`${this.url}/cambiar-email/confirmar`, { codigo });
   }
 
-  cancelarCambioEmail(idUsuario: number): Observable<void> {
-    return this.http.post<void>(`${this.url}/cambiar-email/cancelar`, { idUsuario, codigo: "" });
+  cancelarCambioEmail(): Observable<void> {
+    return this.http.post<void>(`${this.url}/cambiar-email/cancelar`, {});
   }
 }

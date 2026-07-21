@@ -32,6 +32,10 @@ groq:
   api-key: ${GROQ_API_KEY:}
   model: ${GROQ_MODEL:llama-3.3-70b-versatile}
 
+jwt:
+  secreto: ${JWT_SECRETO:NeuSaves2026ClaveSecretaJWTDesarrollo}
+  expiracion-horas: ${JWT_EXPIRACION_HORAS:8}
+
 cors:
   origins: ${CORS_ORIGINS:http://localhost:4200,http://localhost:4300}
 

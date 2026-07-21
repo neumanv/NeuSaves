@@ -12,7 +12,14 @@
       <h1 class="font-titulos text-3xl font-bold">Estadísticas</h1>
 
       <!-- Filtro por mes o año -->
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 flex-wrap">
+        @if (hayDatos()){
+          <button type="button" (click)="descargarPNG()" [disabled]="descargando()"
+            class="inline-flex items-center gap-2 rounded-lg bg-boton text-blanco py-1.5 px-3 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-60 cursor-pointer">
+            <i class="bi" [ngClass]="descargando() ? 'bi-hourglass-split' : 'bi-download'"></i>
+            {{ descargando() ? "Generando..." : "Descargar PNG" }}
+          </button>
+        }
         <div class="flex rounded-lg border border-borde overflow-hidden text-sm">
           <button type="button" (click)="cambiarModo('mes')"
             class="py-1.5 px-3 font-medium transition-colors cursor-pointer"

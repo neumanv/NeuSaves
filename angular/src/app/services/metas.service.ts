@@ -9,11 +9,11 @@ export class MetasService {
   private readonly http = inject(HttpClient);
   private readonly url = `${environment.apiUrl}/metas-usuario`;
 
-  findByUsuario(usuario: number): Observable<Meta[]> {
-    return this.http.get<Meta[]>(`${this.url}?usuario=${usuario}`);
+  findByUsuario(usuario?: number): Observable<Meta[]> {
+    return this.http.get<Meta[]>(`${this.url}${usuario != null ? `?usuario=${usuario}` : ""}`);
   }
 
-  crear(payload: { idUsuario: number; titulo: string; descripcion: string }): Observable<Meta> {
+  crear(payload: { idUsuario?: number; titulo: string; descripcion: string }): Observable<Meta> {
     return this.http.post<Meta>(this.url, payload);
   }
 
@@ -21,8 +21,8 @@ export class MetasService {
     return this.http.patch<Meta>(`${this.url}/${idMetaUsuario}/completado?valor=${valor}`, {});
   }
 
-  guardarOrden(usuario: number, ids: number[]): Observable<any> {
-    return this.http.put(`${this.url}/orden?usuario=${usuario}`, ids);
+  guardarOrden(ids: number[], usuario?: number): Observable<any> {
+    return this.http.put(`${this.url}/orden${usuario != null ? `?usuario=${usuario}` : ""}`, ids);
   }
 
   eliminar(idMetaUsuario: number): Observable<void> {

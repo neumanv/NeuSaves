@@ -1,5 +1,7 @@
 package com.gastos.backend.service;
 
+import com.gastos.backend.config.JwtService;
+import com.gastos.backend.dto.LoginResponse;
 import com.gastos.backend.model.Usuario;
 import com.gastos.backend.repository.UsuarioRepository;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -20,14 +22,16 @@ public class AuthService {
     private final UsuarioRepository usuarioRepository;
     private final CorreoService correoService;
     private final CambioEmailService cambioEmailService;
+    private final JwtService jwtService;
     private final SecureRandom aleatorio = new SecureRandom();
     private final PasswordEncoder encoder = new BCryptPasswordEncoder();
 
     public AuthService(UsuarioRepository usuarioRepository, CorreoService correoService,
-                       CambioEmailService cambioEmailService) {
+                       CambioEmailService cambioEmailService, JwtService jwtService) {
         this.usuarioRepository = usuarioRepository;
         this.correoService = correoService;
         this.cambioEmailService = cambioEmailService;
+        this.jwtService = jwtService;
     }
 
     @Transactional
@@ -77,7 +81,7 @@ public class AuthService {
         return ResponseEntity.status(HttpStatus.CREATED).body(guardado);
     }
 
-    public ResponseEntity<Usuario> login(String email, String contrasena) {
+    public ResponseEntity<LoginResponse> login(String email, String contrasena) {
         email = email == null ? "" : email.trim();
         contrasena = contrasena == null ? "" : contrasena;
 
@@ -88,7 +92,8 @@ public class AuthService {
         if (!usuario.isVerificado()) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        return ResponseEntity.ok(usuario);
+        String token = jwtService.generarToken(usuario.getIdUsuario());
+        return ResponseEntity.ok(new LoginResponse(token, usuario));
     }
 
     @Transactional

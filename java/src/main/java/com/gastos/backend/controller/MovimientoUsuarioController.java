@@ -1,5 +1,6 @@
 package com.gastos.backend.controller;
 
+import com.gastos.backend.config.AuthUtils;
 import com.gastos.backend.dto.EstadisticasResponse;
 import com.gastos.backend.dto.MovimientoPeriodico;
 import com.gastos.backend.dto.PaginaResponse;
@@ -35,7 +36,7 @@ import java.util.List;
 @RequestMapping("/api/movimientos-usuarios")
 public class MovimientoUsuarioController {
 
-    public record CambioPeriodico(Long idUsuario, Long idPeriodo, Integer diaCobro, Integer mesCobro, LocalDate fechaFin) {}
+    public record CambioPeriodico(Long idPeriodo, Integer diaCobro, Integer mesCobro, LocalDate fechaFin) {}
 
     private static final int MAX_PERIODICOS = 10;
 
@@ -43,6 +44,7 @@ public class MovimientoUsuarioController {
     private final MovimientoPeriodicoService movimientoPeriodicoService;
     private final CorreoService correoService;
     private final EstadisticasService estadisticasService;
+    private final AuthUtils authUtils;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -50,45 +52,51 @@ public class MovimientoUsuarioController {
     public MovimientoUsuarioController(MovimientoUsuarioRepository movimientoUsuarioRepository,
                                        MovimientoPeriodicoService movimientoPeriodicoService,
                                        CorreoService correoService,
-                                       EstadisticasService estadisticasService) {
+                                       EstadisticasService estadisticasService,
+                                       AuthUtils authUtils) {
         this.movimientoUsuarioRepository = movimientoUsuarioRepository;
         this.movimientoPeriodicoService = movimientoPeriodicoService;
         this.correoService = correoService;
         this.estadisticasService = estadisticasService;
+        this.authUtils = authUtils;
     }
 
     @GetMapping("/count")
-    public long contarDelMes(@RequestParam Long usuario) {
+    public long contarDelMes(@RequestParam(required = false) Long usuario) {
+        Long id = resolverUsuario(usuario);
         LocalDate hoy = LocalDate.now();
         return movimientoUsuarioRepository.countByIdUsuarioAndIdPeriodoIsNullAndFechaMovimientoBetween(
-                usuario, hoy.withDayOfMonth(1), hoy.withDayOfMonth(hoy.lengthOfMonth()));
+                id, hoy.withDayOfMonth(1), hoy.withDayOfMonth(hoy.lengthOfMonth()));
     }
 
     @GetMapping("/saldo")
-    public BigDecimal saldoActual(@RequestParam Long usuario) {
-        return movimientoUsuarioRepository.findFirstByIdUsuarioOrderByIdMovimientoUsuarioDesc(usuario)
+    public BigDecimal saldoActual(@RequestParam(required = false) Long usuario) {
+        Long id = resolverUsuario(usuario);
+        return movimientoUsuarioRepository.findFirstByIdUsuarioOrderByIdMovimientoUsuarioDesc(id)
                 .map(MovimientoUsuario::getSaldo)
                 .orElse(BigDecimal.ZERO);
     }
 
     @GetMapping("/resumen-mes")
-    public ResumenMesResponse resumenDelMes(@RequestParam Long usuario) {
+    public ResumenMesResponse resumenDelMes(@RequestParam(required = false) Long usuario) {
+        Long id = resolverUsuario(usuario);
         LocalDate hoy = LocalDate.now();
         LocalDate desde = hoy.withDayOfMonth(1);
         LocalDate hasta = hoy.withDayOfMonth(hoy.lengthOfMonth());
-        BigDecimal ingresos = movimientoUsuarioRepository.sumarPorTipoEnRango(usuario, "N", desde, hasta);
-        BigDecimal gastos = movimientoUsuarioRepository.sumarPorTipoEnRango(usuario, "S", desde, hasta);
+        BigDecimal ingresos = movimientoUsuarioRepository.sumarPorTipoEnRango(id, "N", desde, hasta);
+        BigDecimal gastos = movimientoUsuarioRepository.sumarPorTipoEnRango(id, "S", desde, hasta);
         return new ResumenMesResponse(ingresos, gastos);
     }
 
     @GetMapping("/ultimos")
-    public List<UltimoMovimiento> ultimos(@RequestParam Long usuario,
+    public List<UltimoMovimiento> ultimos(@RequestParam(required = false) Long usuario,
                                           @RequestParam(defaultValue = "5") int limite) {
-        return movimientoUsuarioRepository.ultimosMovimientos(usuario, limite);
+        Long id = resolverUsuario(usuario);
+        return movimientoUsuarioRepository.ultimosMovimientos(id, limite);
     }
 
     @GetMapping("/pagina")
-    public PaginaResponse<UltimoMovimiento> pagina(@RequestParam Long usuario,
+    public PaginaResponse<UltimoMovimiento> pagina(@RequestParam(required = false) Long usuario,
                                       @RequestParam(defaultValue = "0") int pagina,
                                       @RequestParam(defaultValue = "50") int tamano,
                                       @RequestParam(required = false) String gasto,
@@ -97,9 +105,10 @@ public class MovimientoUsuarioController {
                                       @RequestParam(required = false) LocalDate hasta,
                                       @RequestParam(required = false) BigDecimal min,
                                       @RequestParam(required = false) BigDecimal max) {
+        Long id = resolverUsuario(usuario);
         String gastoFiltro = (gasto == null || gasto.isBlank()) ? null : gasto;
         Page<UltimoMovimiento> resultado = movimientoUsuarioRepository.movimientosFiltrados(
-                usuario, gastoFiltro, tipo, desde, hasta, min, max, PageRequest.of(pagina, tamano));
+                id, gastoFiltro, tipo, desde, hasta, min, max, PageRequest.of(pagina, tamano));
         return new PaginaResponse<>(
                 resultado.getContent(),
                 resultado.getTotalPages(),
@@ -111,8 +120,10 @@ public class MovimientoUsuarioController {
     @PostMapping
     @Transactional
     public ResponseEntity<MovimientoUsuario> crear(@RequestBody MovimientoUsuario movimiento) {
+        Long idAuth = resolverUsuario(movimiento.getIdUsuario());
+        movimiento.setIdUsuario(idAuth);
         if (movimiento.getIdPeriodo() != null
-                && movimientoUsuarioRepository.countByIdUsuarioAndIdPeriodoIsNotNull(movimiento.getIdUsuario()) >= MAX_PERIODICOS) {
+                && movimientoUsuarioRepository.countByIdUsuarioAndIdPeriodoIsNotNull(idAuth) >= MAX_PERIODICOS) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
         movimientoPeriodicoService.asignarDiaCobroPorDefecto(movimiento);
@@ -124,13 +135,15 @@ public class MovimientoUsuarioController {
     }
 
     @GetMapping("/periodicos")
-    public List<MovimientoPeriodico> periodicos(@RequestParam Long usuario) {
-        return movimientoUsuarioRepository.movimientosPeriodicos(usuario);
+    public List<MovimientoPeriodico> periodicos(@RequestParam(required = false) Long usuario) {
+        Long id = resolverUsuario(usuario);
+        return movimientoUsuarioRepository.movimientosPeriodicos(id);
     }
 
     @PutMapping("/periodicos/{id}")
     public ResponseEntity<Void> cambiarPeriodico(@PathVariable Long id, @RequestBody CambioPeriodico cambio) {
-        MovimientoUsuario plantilla = buscarPlantillaDelUsuario(id, cambio.idUsuario());
+        Long idAuth = authUtils.idAutenticado();
+        MovimientoUsuario plantilla = buscarPlantillaDelUsuario(id, idAuth);
         if (plantilla == null) {
             return ResponseEntity.notFound().build();
         }
@@ -143,8 +156,9 @@ public class MovimientoUsuarioController {
     }
 
     @DeleteMapping("/periodicos/{id}")
-    public ResponseEntity<Void> eliminarPeriodico(@PathVariable Long id, @RequestParam Long usuario) {
-        MovimientoUsuario plantilla = buscarPlantillaDelUsuario(id, usuario);
+    public ResponseEntity<Void> eliminarPeriodico(@PathVariable Long id) {
+        Long idAuth = authUtils.idAutenticado();
+        MovimientoUsuario plantilla = buscarPlantillaDelUsuario(id, idAuth);
         if (plantilla == null) {
             return ResponseEntity.notFound().build();
         }
@@ -162,14 +176,27 @@ public class MovimientoUsuarioController {
     }
 
     @GetMapping("/estadisticas")
-    public EstadisticasResponse estadisticas(@RequestParam Long usuario,
+    public EstadisticasResponse estadisticas(@RequestParam(required = false) Long usuario,
                                             @RequestParam(required = false) LocalDate desde,
                                             @RequestParam(required = false) LocalDate hasta) {
-        return estadisticasService.estadisticas(usuario, desde, hasta);
+        Long id = resolverUsuario(usuario);
+        return estadisticasService.estadisticas(id, desde, hasta);
     }
 
     @GetMapping("/estadisticas/anios")
-    public List<Integer> aniosConDatos(@RequestParam Long usuario) {
-        return estadisticasService.aniosConDatos(usuario);
+    public List<Integer> aniosConDatos(@RequestParam(required = false) Long usuario) {
+        Long id = resolverUsuario(usuario);
+        return estadisticasService.aniosConDatos(id);
+    }
+
+    /**
+     * Si se pasa un id de usuario, verifica que el autenticado tiene acceso (él mismo o subusuario).
+     * Si no se pasa, usa el id del autenticado.
+     */
+    private Long resolverUsuario(Long usuario) {
+        if (usuario == null) {
+            return authUtils.idAutenticado();
+        }
+        return authUtils.verificarAcceso(usuario);
     }
 }

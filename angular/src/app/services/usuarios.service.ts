@@ -10,12 +10,8 @@ export class UsuariosService {
   private readonly http = inject(HttpClient);
   private readonly url = `${environment.apiUrl}/usuarios`;
 
-  findAll(): Observable<Usuario[]> {
+  findSubusuarios(): Observable<Usuario[]> {
     return this.http.get<Usuario[]>(this.url);
-  }
-
-  findByPrincipal(principal: number): Observable<Usuario[]> {
-    return this.http.get<Usuario[]>(`${this.url}?principal=${principal}`);
   }
 
   findById(id: number): Observable<UsuarioSesion> {

@@ -6,6 +6,7 @@ import{ ActivatedRoute, RouterLink } from "@angular/router";
 import{ Header } from "../header/header";
 import{ Footer } from "../footer/footer";
 import{ descifrarId } from "../cifrado";
+import{ Auth } from "../auth";
 import{ environment } from "../environment";
 import{ Periodo, TipoMovimiento, MovimientoLista, PaginaMovimientos, MovimientoPayload } from "../models";
 
@@ -114,7 +115,7 @@ export class Movimientos implements OnInit{
   }
 
 
-  constructor(private http: HttpClient, private ruta: ActivatedRoute, @Inject(PLATFORM_ID) private platformId: Object){}
+  constructor(private http: HttpClient, private ruta: ActivatedRoute, private auth: Auth, @Inject(PLATFORM_ID) private platformId: Object){}
 
   ngOnInit(): void{
     if (!isPlatformBrowser(this.platformId)){
@@ -152,10 +153,14 @@ export class Movimientos implements OnInit{
     this.cargando.set(true);
     //Solo se añaden a la URL los filtros que tengan valor
     const params = new URLSearchParams({
-      usuario: String(id),
       pagina: String(pagina),
       tamano: String(this.TAMANO_PAGINA)
     });
+    //El usuario solo se envía cuando se consulta un subusuario (distinto del principal autenticado)
+    const principal = this.auth.usuario();
+    if (principal && id !== principal.idUsuario){
+      params.set("usuario", String(id));
+    }
     if (this.filtroGasto){
       params.set("gasto", this.filtroGasto);
     }

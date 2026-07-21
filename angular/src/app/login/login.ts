@@ -6,7 +6,7 @@ import{ Router } from "@angular/router";
 import{ Header } from "../header/header";
 import{ Footer } from "../footer/footer";
 import{ PREFIJOS, Pais } from "../prefijos";
-import{ Auth, UsuarioSesion } from "../auth";
+import{ Auth, UsuarioSesion, LoginResponse } from "../auth";
 import{ AuthApiService } from "../services/auth-api.service";
 import{ normaliza, emailValido, dniNieValido } from "../utils/validators";
 
@@ -52,6 +52,7 @@ export class Login implements OnInit, AfterViewInit{
 
   //Verificación del código enviado por correo
   emailPendiente = signal("");
+  contrasenaPendiente = "";
   codigo = "";
   verificando = signal(false);
   reenviando = signal(false);
@@ -174,8 +175,9 @@ export class Login implements OnInit, AfterViewInit{
     });
   }
 
-  private irAVerificar(email: string, aviso: string): void{
+  private irAVerificar(email: string, contrasena: string, aviso: string): void{
     this.emailPendiente.set(email);
+    this.contrasenaPendiente = contrasena;
     this.codigo = "";
     this.errorVerificar.set(null);
     this.avisoVerificar.set(aviso);
@@ -196,15 +198,16 @@ export class Login implements OnInit, AfterViewInit{
     this.entrando.set(true);
     this.errorLogin.set(null);
     this.authApi.login(email, contrasena).subscribe({
-      next: (usuario: UsuarioSesion) =>{
+      next: (response: LoginResponse) =>{
         this.entrando.set(false);
-        this.entrar(usuario);
+        this.auth.iniciarSesion(response);
+        this.router.navigate(["/panel"]);
       },
       error: (err: HttpErrorResponse) =>{
         this.entrando.set(false);
         if (err.status === 403){
           //Cuenta creada pero sin verificar: se pide el código antes de dejar pasar
-          this.irAVerificar(email, "Tu cuenta aún no está verificada. Introduce el código que te enviamos por correo o pide uno nuevo.");
+          this.irAVerificar(email, contrasena, "Tu cuenta aún no está verificada. Introduce el código que te enviamos por correo o pide uno nuevo.");
         }else if (err.status === 401){
           this.errorLogin.set("Email o contraseña incorrectos.");
         }else{
@@ -215,9 +218,14 @@ export class Login implements OnInit, AfterViewInit{
     });
   }
 
-  private entrar(usuario: UsuarioSesion): void{
-    this.auth.iniciarSesion(usuario);
-    this.router.navigate(["/panel"]);
+  private entrarConLogin(email: string, contrasena: string): void{
+    this.authApi.login(email, contrasena).subscribe({
+      next: (response: LoginResponse) =>{
+        this.auth.iniciarSesion(response);
+        this.router.navigate(["/panel"]);
+      },
+      error: () => this.router.navigate(["/acceso"])
+    });
   }
 
   //--- Registro ---
@@ -278,7 +286,7 @@ export class Login implements OnInit, AfterViewInit{
     this.authApi.registro(payload).subscribe({
       next: (creado: UsuarioSesion) =>{
         this.guardando.set(false);
-        this.irAVerificar(creado.email ?? payload.email, "Te hemos enviado un código de 5 números a tu correo. Introdúcelo para activar la cuenta.");
+        this.irAVerificar(creado.email ?? payload.email, u.contrasena, "Te hemos enviado un código de 5 números a tu correo. Introdúcelo para activar la cuenta.");
       },
       error: (err: HttpErrorResponse) =>{
         console.error("Error al crear la cuenta:", err);
@@ -308,9 +316,9 @@ export class Login implements OnInit, AfterViewInit{
     this.verificando.set(true);
     this.errorVerificar.set(null);
     this.authApi.verificar(this.emailPendiente(), codigo).subscribe({
-      next: (usuario: UsuarioSesion) =>{
+      next: () =>{
         this.verificando.set(false);
-        this.entrar(usuario);
+        this.entrarConLogin(this.emailPendiente(), this.contrasenaPendiente);
       },
       error: (err: HttpErrorResponse) =>{
         this.verificando.set(false);

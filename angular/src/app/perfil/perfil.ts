@@ -194,7 +194,7 @@ export class Perfil implements OnInit, OnDestroy{
     }
     this.cargandoPeriodicos.set(true);
     this.errorPeriodicos.set(null);
-    this.http.get<MovimientoPeriodico[]>(`${this.movimientosUrl}/periodicos?usuario=${usuario.idUsuario}`).subscribe({
+    this.http.get<MovimientoPeriodico[]>(`${this.movimientosUrl}/periodicos`).subscribe({
       next: (movimientos) =>{
         this.cargandoPeriodicos.set(false);
         this.periodicos.set(movimientos ?? []);
@@ -330,7 +330,7 @@ export class Perfil implements OnInit, OnDestroy{
     }
     this.borrandoPeriodico.set(true);
     this.errorEliminar.set(null);
-    this.http.delete(`${this.movimientosUrl}/periodicos/${m.idMovimientoUsuario}?usuario=${usuario.idUsuario}`).subscribe({
+    this.http.delete(`${this.movimientosUrl}/periodicos/${m.idMovimientoUsuario}`).subscribe({
       next: () =>{
         this.borrandoPeriodico.set(false);
         this.eliminandoPeriodico.set(null);
@@ -423,9 +423,8 @@ export class Perfil implements OnInit, OnDestroy{
         this.guardando.set(false);
         const fusion = { ...usuario, ...actualizado };
         //Actualiza la sesión para que el resto de la app vea los datos nuevos
-        this.auth.iniciarSesion(fusion);
+        this.auth.actualizarUsuario(fusion);
         this.usuarioEditando = fusion;
-        //Si el principal también era el usuario activo, mantenlo al día
         if (this.auth.usuarioActivo()){
           this.auth.activarUsuario(fusion);
         }
@@ -519,7 +518,6 @@ export class Perfil implements OnInit, OnDestroy{
     this.cambiando.set(true);
     this.errorContrasena.set(null);
     this.http.post<void>(`${this.authUrl}/cambiar-contrasena`,{
-      idUsuario: usuario.idUsuario,
       contrasenaActual: c.actual,
       contrasenaNueva: c.nueva
     }).subscribe({
@@ -553,7 +551,6 @@ export class Perfil implements OnInit, OnDestroy{
     this.errorCodigoEmail.set(null);
     this.codigoEmail = "";
     this.http.post<void>(`${this.authUrl}/cambiar-email/solicitar`,{
-      idUsuario: usuario.idUsuario,
       email: emailNuevo
     }).subscribe({
       next: () =>{
@@ -590,13 +587,12 @@ export class Perfil implements OnInit, OnDestroy{
     this.confirmandoEmail.set(true);
     this.errorCodigoEmail.set(null);
     this.http.post<UsuarioSesion>(`${this.authUrl}/cambiar-email/confirmar`,{
-      idUsuario: usuario.idUsuario,
       codigo
     }).subscribe({
       next: (actualizado) =>{
         this.confirmandoEmail.set(false);
         const fusion = { ...usuario, ...actualizado };
-        this.auth.iniciarSesion(fusion);
+        this.auth.actualizarUsuario(fusion);
         this.usuarioEditando = fusion;
         if (this.auth.usuarioActivo()){
           this.auth.activarUsuario(fusion);
@@ -625,7 +621,7 @@ export class Perfil implements OnInit, OnDestroy{
   cerrarVerificacionEmail(): void{
     const usuario = this.auth.usuario();
     if (usuario && this.verificandoEmail()){
-      this.http.post<void>(`${this.authUrl}/cambiar-email/cancelar`, { idUsuario: usuario.idUsuario, codigo: "" })
+      this.http.post<void>(`${this.authUrl}/cambiar-email/cancelar`, {})
         .subscribe({ error: () => {} });
     }
     this.detenerCuentaAtrasEmail();

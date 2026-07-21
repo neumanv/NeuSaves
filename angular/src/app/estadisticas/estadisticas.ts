@@ -6,6 +6,7 @@ import{ ActivatedRoute, RouterLink } from "@angular/router";
 import{ Header } from "../header/header";
 import{ Footer } from "../footer/footer";
 import{ descifrarId } from "../cifrado";
+import{ Auth } from "../auth";
 import{ environment } from "../environment";
 import{ EstadisticaTipo, EstadisticaMes, EstadisticasDatos } from "../models";
 
@@ -155,7 +156,277 @@ export class Estadisticas implements OnInit{
     });
   });
 
-  constructor(private http: HttpClient, private ruta: ActivatedRoute, @Inject(PLATFORM_ID) private platformId: Object){}
+  descargando = signal(false);
+
+  //Meses en formato largo para el subtítulo de la imagen
+  private readonly mesesLargos = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+  constructor(private http: HttpClient, private ruta: ActivatedRoute, private auth: Auth, @Inject(PLATFORM_ID) private platformId: Object){}
+
+  //Parámetro de query solo cuando el id corresponde a un subusuario
+  private paramUsuario(id: number): string{
+    const principal = this.auth.usuario();
+    return principal && id !== principal.idUsuario ? `usuario=${id}` : "";
+  }
+
+  //Genera un PNG dibujando las estadísticas con Canvas, replicando el estilo de la pantalla.
+  //Se dibuja a mano (en vez de capturar el DOM) para que todo el texto y las gráficas salgan nítidos.
+  descargarPNG(): void{
+    const d = this.datos();
+    if (!d || !isPlatformBrowser(this.platformId)){
+      return;
+    }
+    this.descargando.set(true);
+
+    //Paleta según el tema activo (claro/oscuro), igual que styles.css
+    const oscuro = document.documentElement.getAttribute("data-tema") === "oscuro";
+    const c = oscuro
+      ? { fondo: "#1A1C1F", blanco: "#24272B", borde: "#383C41", texto: "#F2F2F2", boton: "#9A9FA6", verde: "#2E9E6B", peligro: "#FF3D3D" }
+      : { fondo: "#F2F2F2", blanco: "#FFFFFF", borde: "#E6E6E6", texto: "#000000", boton: "#999999", verde: "#2E9E6B", peligro: "#FF3D3D" };
+    const FT = "'Bellota Text', sans-serif";
+    const FH = "'Radio Canada Big', sans-serif";
+
+    //Todo el dibujo se hace dentro de esta función, que se ejecuta una vez cargado el logo
+    const pinta = (logo: HTMLImageElement | null) =>{
+
+    //--- Geometría ---
+    const DPR = 2;
+    const W = 900;
+    const P = 28;          //margen exterior
+    const G = 20;          //separación entre tarjetas
+    const PAD = 20;        //padding interior de tarjeta
+    const rowH = 30;       //alto de fila de lista
+    const halfW = (W - 2 * P - G) / 2;
+
+    const gastos = this.gastosPorTipo();
+    const ingresos = this.ingresosPorTipo();
+    const comunes = this.tiposComunes();
+    const evol = this.evolucionMensual();
+
+    const listCardH = (n: number) => PAD + 34 + Math.max(n, 1) * rowH + 4;
+    const headerBlockH = 66;
+    const summaryH = 92;
+    const midH = 210;
+    const row3H = Math.max(listCardH(gastos.length), listCardH(ingresos.length));
+    const row4H = listCardH(comunes.length);
+    const totalH = P + headerBlockH + summaryH + G + midH + G + row3H + G + row4H + P;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = W * DPR;
+    canvas.height = totalH * DPR;
+    const ctx = canvas.getContext("2d")!;
+    ctx.scale(DPR, DPR);
+    ctx.textBaseline = "alphabetic";
+
+    //Helpers de dibujo
+    const card = (x: number, y: number, w: number, h: number) =>{
+      ctx.fillStyle = c.blanco;
+      ctx.strokeStyle = c.borde;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      (ctx as any).roundRect(x, y, w, h, 16);
+      ctx.fill();
+      ctx.stroke();
+    };
+    const barra = (x: number, y: number, w: number, h: number, r: number, color: string) =>{
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      (ctx as any).roundRect(x, y, Math.max(w, r * 2), h, r);
+      ctx.fill();
+    };
+    const recorta = (txt: string, maxW: number) =>{
+      if (ctx.measureText(txt).width <= maxW){
+        return txt;
+      }
+      let t = txt;
+      while (t.length > 1 && ctx.measureText(t + "…").width > maxW){
+        t = t.slice(0, -1);
+      }
+      return t + "…";
+    };
+
+    //--- Fondo ---
+    ctx.fillStyle = c.fondo;
+    ctx.fillRect(0, 0, W, totalH);
+
+    //--- Cabecera ---
+    let y = P;
+    ctx.fillStyle = c.texto;
+    ctx.font = `bold 26px ${FH}`;
+    ctx.textAlign = "left";
+    ctx.fillText("Estadísticas", P, y + 26);
+    const periodo = this.modo() === "anio"
+      ? `Año ${this.anioSel}`
+      : `${this.mesesLargos[parseInt(this.mesSel.slice(5), 10) - 1]} ${this.mesSel.slice(0, 4)}`;
+    ctx.fillStyle = c.boton;
+    ctx.font = `14px ${FT}`;
+    ctx.fillText(periodo, P, y + 48);
+    //Logo de la app en la esquina superior derecha (respeta su proporción)
+    if (logo && logo.naturalWidth > 0){
+      const logoH = 46;
+      const logoW = logo.naturalWidth * logoH / logo.naturalHeight;
+      //Centrado verticalmente respecto al título para que no descuadre la cabecera
+      ctx.drawImage(logo, W - P - logoW, y - 4, logoW, logoH);
+    }
+    y += headerBlockH;
+
+    //--- Tarjetas de resumen ---
+    const sw = (W - 2 * P - 2 * G) / 3;
+    const resumen: [string, string, string][] = [
+      ["Ingresos totales", "+" + this.euros(d.totalIngresos), c.verde],
+      ["Gastos totales", "-" + this.euros(d.totalGastos), c.peligro],
+      ["Balance", this.euros(d.balance), c.texto]
+    ];
+    resumen.forEach(([titulo, valor, color], i) =>{
+      const x = P + i * (sw + G);
+      card(x, y, sw, summaryH);
+      ctx.fillStyle = c.texto;
+      ctx.font = `13px ${FT}`;
+      ctx.textAlign = "left";
+      ctx.fillText(titulo, x + PAD, y + 30);
+      ctx.fillStyle = color;
+      ctx.font = `bold 26px ${FH}`;
+      ctx.fillText(valor, x + PAD, y + 66);
+    });
+    y += summaryH + G;
+
+    //--- Donut ingresos vs gastos ---
+    const donutY = y;
+    card(P, donutY, halfW, midH);
+    ctx.fillStyle = c.texto;
+    ctx.font = `bold 17px ${FH}`;
+    ctx.textAlign = "left";
+    ctx.fillText("Ingresos vs Gastos", P + PAD, donutY + 32);
+    const cx = P + PAD + 66;
+    const cy = donutY + 60 + 66;
+    const rad = 58;
+    ctx.lineWidth = 22;
+    ctx.strokeStyle = c.peligro;
+    ctx.beginPath();
+    ctx.arc(cx, cy, rad, 0, 2 * Math.PI);
+    ctx.stroke();
+    const frac = this.porcentajeIngresos() / 100;
+    if (frac > 0){
+      ctx.strokeStyle = c.verde;
+      ctx.beginPath();
+      ctx.arc(cx, cy, rad, -Math.PI / 2, -Math.PI / 2 + frac * 2 * Math.PI);
+      ctx.stroke();
+    }
+    ctx.fillStyle = c.boton;
+    ctx.font = `11px ${FT}`;
+    ctx.textAlign = "center";
+    ctx.fillText("Balance", cx, cy - 4);
+    ctx.fillStyle = c.texto;
+    ctx.font = `bold 14px ${FH}`;
+    ctx.fillText(this.euros(d.balance), cx, cy + 14);
+    //Leyenda
+    const lx = cx + rad + 30;
+    ctx.textAlign = "left";
+    ctx.fillStyle = c.verde;
+    ctx.beginPath();
+    ctx.arc(lx + 6, cy - 22, 6, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillStyle = c.texto;
+    ctx.font = `13px ${FT}`;
+    ctx.fillText("Ingresos", lx + 20, cy - 18);
+    ctx.fillStyle = c.verde;
+    ctx.font = `bold 13px ${FT}`;
+    ctx.fillText(`${this.porcentajeIngresos()}% · +${this.euros(d.totalIngresos)}`, lx + 20, cy - 2);
+    ctx.fillStyle = c.peligro;
+    ctx.beginPath();
+    ctx.arc(lx + 6, cy + 18, 6, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillStyle = c.texto;
+    ctx.font = `13px ${FT}`;
+    ctx.fillText("Gastos", lx + 20, cy + 22);
+    ctx.fillStyle = c.peligro;
+    ctx.font = `bold 13px ${FT}`;
+    ctx.fillText(`${this.porcentajeGastos()}% · -${this.euros(d.totalGastos)}`, lx + 20, cy + 38);
+
+    //--- Evolución mensual ---
+    const ex = P + halfW + G;
+    card(ex, donutY, halfW, midH);
+    ctx.fillStyle = c.texto;
+    ctx.font = `bold 17px ${FH}`;
+    ctx.textAlign = "left";
+    ctx.fillText("Evolución mensual", ex + PAD, donutY + 32);
+    const chartTop = donutY + 56;
+    const chartH = 118;
+    const baseY = chartTop + chartH;
+    const innerW = halfW - 2 * PAD;
+    const slot = innerW / Math.max(evol.length, 1);
+    const factor = chartH / 140;
+    evol.forEach((m, i) =>{
+      const slotX = ex + PAD + i * slot + slot / 2;
+      const bw = Math.min(8, slot / 3);
+      const hi = m.alturaIngresos * factor;
+      const hg = m.alturaGastos * factor;
+      barra(slotX - bw - 1, baseY - hi, bw, hi, 2, c.verde);
+      barra(slotX + 1, baseY - hg, bw, hg, 2, c.peligro);
+      ctx.fillStyle = c.boton;
+      ctx.font = `10px ${FT}`;
+      ctx.textAlign = "center";
+      ctx.fillText(m.etiqueta, slotX, baseY + 16);
+    });
+    y += midH + G;
+
+    //--- Listas de barras horizontales ---
+    const listaCard = (x: number, w: number, titulo: string, filas: { tipo: string; valor: number; porcentaje: number }[],
+                        color: string, alto: number, formato: (v: number) => string, vacio: string) =>{
+      card(x, y, w, alto);
+      ctx.fillStyle = c.texto;
+      ctx.font = `bold 17px ${FH}`;
+      ctx.textAlign = "left";
+      ctx.fillText(titulo, x + PAD, y + 30);
+      if (filas.length === 0){
+        ctx.fillStyle = c.boton;
+        ctx.font = `13px ${FT}`;
+        ctx.fillText(vacio, x + PAD, y + 58);
+        return;
+      }
+      const labelW = 120;
+      const valW = 95;
+      const trackX = x + PAD + labelW + 10;
+      const trackW = w - 2 * PAD - labelW - valW - 20;
+      filas.forEach((b, i) =>{
+        const ry = y + 44 + i * rowH + 15;
+        ctx.fillStyle = c.texto;
+        ctx.font = `13px ${FT}`;
+        ctx.textAlign = "left";
+        ctx.fillText(recorta(b.tipo, labelW), x + PAD, ry + 4);
+        //Track
+        barra(trackX, ry - 4, trackW, 8, 4, c.fondo);
+        //Valor
+        barra(trackX, ry - 4, trackW * b.porcentaje / 100, 8, 4, color);
+        ctx.fillStyle = color;
+        ctx.font = `bold 13px ${FT}`;
+        ctx.textAlign = "right";
+        ctx.fillText(formato(b.valor), x + w - PAD, ry + 4);
+      });
+    };
+
+    listaCard(P, halfW, "Gastos por tipo", gastos, c.peligro, row3H, (v) => this.euros(v), "No hay gastos registrados.");
+    listaCard(ex, halfW, "Ingresos por tipo", ingresos, c.verde, row3H, (v) => this.euros(v), "No hay ingresos registrados.");
+    y += row3H + G;
+
+    listaCard(P, W - 2 * P, "Tipos de movimiento más comunes", comunes, c.boton, row4H,
+      (v) => `${v} ${v === 1 ? "movimiento" : "movimientos"}`, "");
+
+    //--- Descarga ---
+    const enlace = document.createElement("a");
+    enlace.download = `estadisticas-${this.modo() === "mes" ? this.mesSel : this.anioSel}.png`;
+    enlace.href = canvas.toDataURL("image/png");
+    enlace.click();
+    this.descargando.set(false);
+    };
+
+    //Carga el logo según el tema; si falla, se genera la imagen igualmente sin él
+    const logo = new Image();
+    logo.onload = () => pinta(logo);
+    logo.onerror = () => pinta(null);
+    logo.src = oscuro ? "NeuSaves_dark.png" : "NeuSaves.png";
+  }
 
   ngOnInit(): void{
     if (!isPlatformBrowser(this.platformId)){
@@ -169,7 +440,8 @@ export class Estadisticas implements OnInit{
     this.idUsuario.set(id);
 
     //Años con movimientos para el desplegable; se elige el más reciente si el año actual no tiene datos
-    this.http.get<number[]>(`${this.movimientosUrl}/estadisticas/anios?usuario=${id}`).subscribe({
+    const paramAnios = this.paramUsuario(id);
+    this.http.get<number[]>(`${this.movimientosUrl}/estadisticas/anios${paramAnios ? "?" + paramAnios : ""}`).subscribe({
       next: (anios) =>{
         const lista = anios ?? [];
         this.anios.set(lista.length > 0 ? lista : [this.anioSel]);
@@ -194,8 +466,9 @@ export class Estadisticas implements OnInit{
     }
     const [desde, hasta] = this.rangoSeleccionado();
     this.cargando.set(true);
+    const param = this.paramUsuario(id);
     this.http.get<EstadisticasDatos>(
-      `${this.movimientosUrl}/estadisticas?usuario=${id}&desde=${desde}&hasta=${hasta}`
+      `${this.movimientosUrl}/estadisticas?desde=${desde}&hasta=${hasta}${param ? "&" + param : ""}`
     ).subscribe({
       next: (datos) =>{
         this.datos.set(datos);

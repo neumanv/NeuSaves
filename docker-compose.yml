@@ -44,6 +44,7 @@ services:
       #Clave de Groq para el chat FinBot. Se toma del archivo .env (no se sube al repositorio).
       - GROQ_API_KEY=${GROQ_API_KEY:-}
       - GROQ_MODEL=${GROQ_MODEL:-llama-3.3-70b-versatile}
+      - JWT_SECRETO=${JWT_SECRETO:-NeuSaves2026ClaveSecretaJWTDesarrollo}
     depends_on:
       base-datos:
         condition: service_healthy

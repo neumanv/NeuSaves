@@ -188,9 +188,8 @@ export class UsuarioDetalle implements OnInit{
     //Recupera la última conversación con FinBot guardada para este usuario
     this.restaurarChat(id);
 
-    this.http.get<Usuario[]>(this.apiUrl).subscribe({
-      next: (usuarios) =>{
-        const encontrado = usuarios.find((u) => u.idUsuario === id);
+    this.http.get<Usuario>(`${this.apiUrl}/${id}`).subscribe({
+      next: (encontrado) =>{
         if (encontrado){
           this.usuario.set(encontrado);
           //Datos completos del backend (incluye idUsuarioPrincipal): fija bien el usuario activo
@@ -232,19 +231,28 @@ export class UsuarioDetalle implements OnInit{
     this.cargarDatos(id);
   }
 
+  //Indica si el id corresponde a un subusuario (distinto del principal autenticado)
+  private paramUsuario(id: number): string{
+    const principal = this.auth.usuario();
+    return principal && id !== principal.idUsuario ? `usuario=${id}` : "";
+  }
+
   //Carga (o recarga) los importes y la tabla de movimientos del usuario
   private cargarDatos(id: number): void{
-    this.http.get<number>(`${this.movimientosUrl}/count?usuario=${id}`).subscribe({
+    const param = this.paramUsuario(id);
+    const sep = param ? "?" + param : "";
+
+    this.http.get<number>(`${this.movimientosUrl}/count${sep}`).subscribe({
       next: (total) => this.movimientosMes.set(total ?? 0),
       error: (err) => console.error("Error al cargar los movimientos:", err)
     });
 
-    this.http.get<number>(`${this.movimientosUrl}/saldo?usuario=${id}`).subscribe({
+    this.http.get<number>(`${this.movimientosUrl}/saldo${sep}`).subscribe({
       next: (saldo) => this.saldo.set(saldo ?? 0),
       error: (err) => console.error("Error al cargar el saldo:", err)
     });
 
-    this.http.get<ResumenMes>(`${this.movimientosUrl}/resumen-mes?usuario=${id}`).subscribe({
+    this.http.get<ResumenMes>(`${this.movimientosUrl}/resumen-mes${sep}`).subscribe({
       next: (resumen) =>{
         this.ingresosMes.set(resumen?.ingresos ?? 0);
         this.gastosMes.set(resumen?.gastos ?? 0);
@@ -253,7 +261,8 @@ export class UsuarioDetalle implements OnInit{
     });
 
     //Últimos 5 movimientos
-    this.http.get<UltimoMovimiento[]>(`${this.movimientosUrl}/ultimos?usuario=${id}&limite=5`).subscribe({
+    const paramUltimos = param ? `limite=5&${param}` : "limite=5";
+    this.http.get<UltimoMovimiento[]>(`${this.movimientosUrl}/ultimos?${paramUltimos}`).subscribe({
       next: (movimientos) => this.ultimosMovimientos.set(movimientos ?? []),
       error: (err) => console.error("Error al cargar los últimos movimientos:", err)
     });

@@ -1,5 +1,7 @@
 package com.gastos.backend.controller;
 
+import com.gastos.backend.config.AuthUtils;
+import com.gastos.backend.dto.LoginResponse;
 import com.gastos.backend.model.Usuario;
 import com.gastos.backend.service.AuthService;
 import org.springframework.http.ResponseEntity;
@@ -15,14 +17,16 @@ public class AuthController {
     public record CredencialesLogin(String email, String contrasena) {}
     public record PeticionVerificacion(String email, String codigo) {}
     public record PeticionReenvio(String email) {}
-    public record PeticionCambioContrasena(Long idUsuario, String contrasenaActual, String contrasenaNueva) {}
-    public record PeticionCambioEmail(Long idUsuario, String email) {}
-    public record ConfirmacionCambioEmail(Long idUsuario, String codigo) {}
+    public record PeticionCambioContrasena(String contrasenaActual, String contrasenaNueva) {}
+    public record PeticionCambioEmail(String email) {}
+    public record ConfirmacionCambioEmail(String codigo) {}
 
     private final AuthService authService;
+    private final AuthUtils authUtils;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, AuthUtils authUtils) {
         this.authService = authService;
+        this.authUtils = authUtils;
     }
 
     @PostMapping("/registro")
@@ -31,7 +35,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Usuario> login(@RequestBody CredencialesLogin credenciales) {
+    public ResponseEntity<LoginResponse> login(@RequestBody CredencialesLogin credenciales) {
         return authService.login(credenciales.email(), credenciales.contrasena());
     }
 
@@ -52,22 +56,26 @@ public class AuthController {
 
     @PostMapping("/cambiar-contrasena")
     public ResponseEntity<Void> cambiarContrasena(@RequestBody PeticionCambioContrasena peticion) {
-        return authService.cambiarContrasena(peticion.idUsuario(), peticion.contrasenaActual(), peticion.contrasenaNueva());
+        Long idUsuario = authUtils.idAutenticado();
+        return authService.cambiarContrasena(idUsuario, peticion.contrasenaActual(), peticion.contrasenaNueva());
     }
 
     @PostMapping("/cambiar-email/solicitar")
     public ResponseEntity<Void> solicitarCambioEmail(@RequestBody PeticionCambioEmail peticion) {
-        return authService.solicitarCambioEmail(peticion.idUsuario(), peticion.email());
+        Long idUsuario = authUtils.idAutenticado();
+        return authService.solicitarCambioEmail(idUsuario, peticion.email());
     }
 
     @PostMapping("/cambiar-email/confirmar")
     public ResponseEntity<Usuario> confirmarCambioEmail(@RequestBody ConfirmacionCambioEmail confirmacion) {
-        return authService.confirmarCambioEmail(confirmacion.idUsuario(), confirmacion.codigo());
+        Long idUsuario = authUtils.idAutenticado();
+        return authService.confirmarCambioEmail(idUsuario, confirmacion.codigo());
     }
 
     @PostMapping("/cambiar-email/cancelar")
-    public ResponseEntity<Void> cancelarCambioEmail(@RequestBody ConfirmacionCambioEmail confirmacion) {
-        authService.cancelarCambioEmail(confirmacion.idUsuario());
+    public ResponseEntity<Void> cancelarCambioEmail() {
+        Long idUsuario = authUtils.idAutenticado();
+        authService.cancelarCambioEmail(idUsuario);
         return ResponseEntity.noContent().build();
     }
 }

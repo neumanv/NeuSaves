@@ -102,7 +102,7 @@ export class Header implements AfterViewInit {
     this.errorDescarga.set(null);
     this.anios.set([]);
     this.cargandoAnios.set(true);
-    this.http.get<number[]>(`${this.exportacionesUrl}/anios?principal=${principal.idUsuario}`).subscribe({
+    this.http.get<number[]>(`${this.exportacionesUrl}/anios`).subscribe({
       next: (anios) =>{
         const lista = anios ?? [];
         this.anios.set(lista);
@@ -147,7 +147,7 @@ export class Header implements AfterViewInit {
     }
     this.descargando.set(true);
     this.errorDescarga.set(null);
-    this.http.get(`${this.exportacionesUrl}/excel?principal=${principal.idUsuario}&anio=${this.anioSel}`, { responseType: "blob" }).subscribe({
+    this.http.get(`${this.exportacionesUrl}/excel?anio=${this.anioSel}`, { responseType: "blob" }).subscribe({
       next: (archivo) =>{
         const url = URL.createObjectURL(archivo);
         const enlace = document.createElement("a");
