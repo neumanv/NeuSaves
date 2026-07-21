@@ -21,6 +21,16 @@ export interface PaginaMovimientos{
   pagina: number;
 }
 
+//Cobro/ingreso periódico previsto para los próximos días
+export interface ProximoMovimiento{
+  descripcion: string;
+  tipo: string;
+  gasto: string;
+  cantidad: number;
+  periodo: string;
+  fecha: string;
+}
+
 export interface MovimientoPayload{
   idUsuario: number;
   idMovimiento: number;

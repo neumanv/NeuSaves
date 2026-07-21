@@ -36,6 +36,7 @@ public class BolsaService{
         SIMBOLOS.put("^IXIC", "NASDAQ");
         SIMBOLOS.put("EURUSD=X", "EUR/USD");
         SIMBOLOS.put("BTC-EUR", "Bitcoin");
+        SIMBOLOS.put("ETH-EUR", "Ethereum");
     }
 
     private static final Duration CADUCIDAD_CACHE = Duration.ofMinutes(10);

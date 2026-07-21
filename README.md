@@ -1,6 +1,20 @@
 # NeuSaves 💰
 
-Aplicación web de gestión personal de gastos e ingresos con asistente de IA integrado.
+Aplicación web moderna de gestión personal de finanzas con IA integrada. Organiza tus gastos e ingresos, visualiza estadísticas en tiempo real, gestiona metas de ahorro y recibe asesoramiento financiero automático a través de FinBot.
+
+---
+
+## Características principales
+
+- **Panel de usuario** — Resumen de saldo, movimientos del mes, ingresos/gastos, ahorrado
+- **Gestión de movimientos** — Añade ingresos y gastos en un clic; visualiza el historial completo
+- **Movimientos periódicos** — Define gastos e ingresos recurrentes (diarios, semanales, mensuales, anuales)
+- **Próximos movimientos** — Previsualiza los ingresos y gastos periódicos de los próximos 7 días
+- **Estadísticas** — Gráfica del balance de los últimos 6 meses
+- **Cotizaciones de bolsa** — Panel de cotizaciones en tiempo real (IBEX 35, S&P 500, NASDAQ, EUR/USD, Bitcoin, Ethereum)
+- **Chat FinBot** — Asistente de IA conversacional (basado en Groq) para consultas sobre tus finanzas
+- **Metas de ahorro** — Define y rastrea objetivos financieros personalizados
+- **Seguridad** — Autenticación con email, cifrado de contraseñas (BCrypt), recuperación de contraseña por email
 
 ---
 
@@ -35,7 +49,8 @@ Aplicación web de gestión personal de gastos e ingresos con asistente de IA in
 ### APIs e integraciones externas
 | Integración | Descripción |
 |---|---|
-| **Groq API** (`api.groq.com`) | LLM para el chat FinBot (modelo `llama-3.3-70b-versatile` por defecto) |
+| **Groq API** (`api.groq.com`) | LLM para el chat FinBot (modelo `llama-3.3-70b-versatile` por defecto); conversación en tiempo real sobre finanzas personales |
+| **Yahoo Finance API** | Cotizaciones de bolsa en tiempo real (sin clave requerida); caché de 10 minutos en servidor |
 
 ---
 
@@ -54,6 +69,28 @@ Los cuatro servicios Docker son:
 - `correo` — Mailpit SMTP en `1025`, interfaz web en `8025`
 - `backend` — Spring Boot REST API en `8080`
 - `frontend` — Angular compilado y servido por nginx en `4200`
+
+---
+
+## Estructura de la aplicación
+
+### Páginas principales (Frontend Angular)
+- **Login / Registro** — Autenticación segura con verificación por email
+- **Panel de usuario (`/usuario-detalle`)** — Dashboard central con resumen financiero, últimos movimientos, chat, cotizaciones y metas
+- **Movimientos** — Historial completo con filtros y búsqueda
+- **Perfil** — Datos personales, seguridad, movimientos periódicos, perfil público
+- **Estadísticas** — Análisis visuales del historial de gastos e ingresos
+- **Metas** — Crear y gestionar objetivos de ahorro
+- **Página de inicio** — Bienvenida con enlace de acceso
+
+### Modelos de datos principales (Backend)
+- **Usuario** — Datos personales, autenticación, email verificado
+- **Movimiento** — Transacción individual (ingreso/gasto) con descripción, tipo, cantidad, fecha
+- **MovimientoPeriódico** — Configuración de ingresos/gastos recurrentes (periodo, día de cobro, fecha de fin opcional)
+- **ProximoMovimiento** — Proyección de movimientos periódicos para los próximos 7 días
+- **Meta** — Objetivo de ahorro con monto objetivo, fecha límite, progreso
+- **CotizacionBolsa** — Cotización de un símbolo en tiempo real (precio, variación %)
+- **MensajeChat** — Historial del chat FinBot (usuario ↔ modelo)
 
 ---
 
@@ -217,3 +254,44 @@ Comprueba que has creado el archivo `.env` con una `GROQ_API_KEY` válida y que 
 docker compose down -v
 ```
 El flag `-v` elimina también el volumen de la base de datos, así que perderás los datos guardados.
+
+**Las cotizaciones de bolsa muestran "No disponibles"**
+Las cotizaciones se obtienen de Yahoo Finance en tiempo real. Si durante los fines de semana ves "No disponibles", es normal: los mercados están cerrados. Entre semana, comprueba que:
+- El servidor backend está levantado (`docker compose ps` debe mostrar `backend` como `Up`).
+- Yahoo Finance es accesible desde tu conexión (algunos proxies corporativos pueden bloquearlo).
+- El servidor cachea las cotizaciones 10 minutos, así que si reinician los contenedores pueden tardar un poco en aparecer.
+
+**Los correos no llegan al email real**
+Por diseño, todos los correos (registro, recuperación de contraseña) se envían a **Mailpit** (http://localhost:8025) en lugar de a email real. Esto permite desarrollar y probar sin necesidad de configurar un servidor SMTP real. En producción, configura las variables de entorno `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, etc. para apuntar a tu servidor SMTP.
+
+---
+
+## Notas de desarrollo
+
+### Chat FinBot
+- Utiliza la API de Groq con el modelo `llama-3.3-70b-versatile` por defecto.
+- Si no tienes `GROQ_API_KEY`, el chat mostrará un aviso pero el resto de la app funciona.
+- El historial del chat se guarda en la base de datos y se recupera al recargar la página.
+- Máximo de 20 mensajes guardados por sesión para evitar sobrecarga.
+
+### Cotizaciones de bolsa
+- Se actualizan desde **Yahoo Finance** cada 10 minutos (caché en servidor).
+- Símbolos incluidos: `^IBEX` (IBEX 35), `^GSPC` (S&P 500), `^IXIC` (NASDAQ), `EURUSD=X` (EUR/USD), `BTC-EUR` (Bitcoin), `ETH-EUR` (Ethereum).
+- Si un símbolo falla, se sigue mostrando el último valor en caché.
+
+### Movimientos periódicos
+- Se calculan automáticamente en base a la configuración (periodo, día de cobro).
+- Los movimientos futuros se proyectan en la sección "Próximos movimientos" (7 días).
+- Puedes cambiar el día de cobro o eliminar un movimiento periódico desde tu perfil.
+
+### Seguridad
+- Las contraseñas se cifran con **BCrypt** (10 rondas).
+- Los tokens JWT se usan para autenticación en las peticiones a la API.
+- El email debe verificarse en el registro para activar la cuenta.
+- Recuperación de contraseña mediante email (enlace temporal).
+
+---
+
+## Licencia
+
+Este proyecto está disponible bajo la licencia MIT. Siéntete libre de usarlo, modificarlo y distribuirlo.

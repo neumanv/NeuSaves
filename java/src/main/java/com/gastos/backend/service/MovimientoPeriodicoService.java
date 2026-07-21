@@ -1,5 +1,7 @@
 package com.gastos.backend.service;
 
+import com.gastos.backend.dto.MovimientoPeriodico;
+import com.gastos.backend.dto.ProximoMovimiento;
 import com.gastos.backend.model.MovimientoUsuario;
 import com.gastos.backend.model.Periodo;
 import com.gastos.backend.repository.MovimientoUsuarioRepository;
@@ -13,7 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.WeekFields;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 //Genera los cobros/ingresos automáticos de los movimientos periódicos.
@@ -54,7 +59,7 @@ public class MovimientoPeriodicoService{
 
             LocalDate fin = plantilla.getFechaFinMovimiento();
             boolean primerCobro = plantilla.getUltimoCobro() == null;
-            LocalDate siguiente = siguienteCobro(periodo, plantilla, referencia, primerCobro);
+            LocalDate siguiente = siguienteCobro(periodo, plantilla.getDiaCobro(), plantilla.getMesCobro(), referencia, primerCobro);
             boolean generado = false;
 
             //Genera todos los cobros pendientes hasta hoy (recupera los días perdidos) sin pasar la fecha fin
@@ -63,7 +68,7 @@ public class MovimientoPeriodicoService{
                 //Avisa por correo de cada cobro periódico generado, indicando que es periódico y cuándo termina
                 correoService.avisarMovimiento(cobro, plantilla);
                 plantilla.setUltimoCobro(siguiente);
-                siguiente = siguienteCobro(periodo, plantilla, siguiente, false);
+                siguiente = siguienteCobro(periodo, plantilla.getDiaCobro(), plantilla.getMesCobro(), siguiente, false);
                 generado = true;
             }
             if (generado){
@@ -145,11 +150,45 @@ public class MovimientoPeriodicoService{
         return true;
     }
 
+    //Lista los cobros/ingresos periódicos previstos entre hoy y dentro de "dias" días (para "Próximos movimientos").
+    //No genera nada ni toca la base de datos: solo proyecta las próximas fechas de cobro de cada plantilla.
+    public List<ProximoMovimiento> proximosMovimientos(Long idUsuario, int dias){
+        LocalDate hoy = LocalDate.now();
+        LocalDate limite = hoy.plusDays(dias);
+        List<ProximoMovimiento> proximos = new ArrayList<>();
+
+        for (MovimientoPeriodico p : movimientoUsuarioRepository.movimientosPeriodicos(idUsuario)){
+            String periodo = p.getPeriodo();
+            //Punto de partida: el último cobro generado o, si aún no se ha cobrado, la fecha de creación
+            LocalDate referencia = p.getUltimoCobro() != null ? p.getUltimoCobro() : p.getFechaMovimiento();
+            if (periodo == null || referencia == null){
+                continue;
+            }
+
+            LocalDate fin = p.getFechaFinMovimiento();
+            boolean primerCobro = p.getUltimoCobro() == null;
+            LocalDate siguiente = siguienteCobro(periodo, p.getDiaCobro(), p.getMesCobro(), referencia, primerCobro);
+
+            //Avanza cobro a cobro hasta salir de la ventana; añade solo los que caen entre hoy y el límite
+            while (siguiente != null && !siguiente.isAfter(limite) && (fin == null || !siguiente.isAfter(fin))){
+                if (!siguiente.isBefore(hoy)){
+                    proximos.add(new ProximoMovimiento(
+                            p.getDescripcion(), p.getTipo(), p.getGasto(), p.getCantidad(), periodo, siguiente));
+                }
+                siguiente = siguienteCobro(periodo, p.getDiaCobro(), p.getMesCobro(), siguiente, false);
+            }
+        }
+
+        //Los más próximos primero
+        proximos.sort(Comparator.comparing(ProximoMovimiento::fecha));
+        return proximos;
+    }
+
     //Calcula la fecha del siguiente cobro después de una fecha dada.
     //En el primer cobro puede caer dentro del mismo periodo (semana/mes/año) de la creación;
     //después siempre se salta al periodo siguiente para cobrar una sola vez por periodo.
-    private LocalDate siguienteCobro(String periodo, MovimientoUsuario plantilla, LocalDate despuesDe, boolean primerCobro){
-        int dia = plantilla.getDiaCobro() != null ? plantilla.getDiaCobro() : 1;
+    private LocalDate siguienteCobro(String periodo, Integer diaCobro, Integer mesCobro, LocalDate despuesDe, boolean primerCobro){
+        int dia = diaCobro != null ? diaCobro : 1;
 
         if ("Diario".equals(periodo)){
             return despuesDe.plusDays(1);
@@ -172,7 +211,7 @@ public class MovimientoPeriodicoService{
             return diaDelMes(YearMonth.from(despuesDe).plusMonths(salto), dia);
         }
         if ("Anual".equals(periodo)){
-            int mes = plantilla.getMesCobro() != null ? plantilla.getMesCobro() : 1;
+            int mes = mesCobro != null ? mesCobro : 1;
             LocalDate mismoAnio = diaDelMes(YearMonth.of(despuesDe.getYear(), mes), dia);
             if (primerCobro && mismoAnio.isAfter(despuesDe)){
                 return mismoAnio;

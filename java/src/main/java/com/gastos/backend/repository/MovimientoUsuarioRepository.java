@@ -109,7 +109,8 @@ public interface MovimientoUsuarioRepository extends JpaRepository<MovimientoUsu
     //Movimientos periódicos del usuario con el tipo y el periodo ya unidos, para la pestaña del perfil
     @Query(value = "SELECT mu.id_movimiento_usuario AS idMovimientoUsuario, mu.descripcion AS descripcion, " +
                    "m.tipo AS tipo, m.gasto AS gasto, mu.cantidad AS cantidad, p.id_periodo AS idPeriodo, p.periodo AS periodo, " +
-                   "mu.dia_cobro AS diaCobro, mu.mes_cobro AS mesCobro, mu.fecha_fin_movimiento AS fechaFinMovimiento " +
+                   "mu.dia_cobro AS diaCobro, mu.mes_cobro AS mesCobro, mu.fecha_fin_movimiento AS fechaFinMovimiento, " +
+                   "mu.ultimo_cobro AS ultimoCobro, mu.fecha_movimiento AS fechaMovimiento " +
                    "FROM movimientos_usuarios mu " +
                    "JOIN movimientos m ON mu.id_movimiento = m.id_movimiento " +
                    "JOIN periodos p ON mu.id_periodo = p.id_periodo " +

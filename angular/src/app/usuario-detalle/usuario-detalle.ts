@@ -8,7 +8,7 @@ import{ Footer } from "../footer/footer";
 import{ descifrarId } from "../cifrado";
 import{ Auth, UsuarioSesion } from "../auth";
 import{ environment } from "../environment";
-import{ Usuario, UltimoMovimiento, TipoMovimiento, Periodo, CotizacionBolsa, MensajeChat, ChatResponse, MovimientoPayload } from "../models";
+import{ Usuario, UltimoMovimiento, TipoMovimiento, Periodo, CotizacionBolsa, MensajeChat, ChatResponse, MovimientoPayload, ProximoMovimiento } from "../models";
 
 interface ResumenMes{
   ingresos: number;
@@ -43,6 +43,13 @@ export class UsuarioDetalle implements OnInit{
   //Cotizaciones para la tarjeta "Bolsa" (índices, divisa y Bitcoin)
   bolsa = signal<CotizacionBolsa[]>([]);
   bolsaCargando = signal(true);
+  //La tarjeta "Bolsa" muestra todas las cotizaciones (incluido el NASDAQ ^IXIC)
+  bolsaVisible = computed(() => this.bolsa());
+
+  //--- Ventana "Próximos movimientos" (cobros/ingresos periódicos de los próximos 7 días) ---
+  modalProximos = signal(false);
+  proximos = signal<ProximoMovimiento[]>([]);
+  proximosCargando = signal(false);
 
   //--- Chat FinBot ---
   @ViewChild("chatScroll") private chatScroll?: ElementRef<HTMLDivElement>;
@@ -266,6 +273,34 @@ export class UsuarioDetalle implements OnInit{
       next: (movimientos) => this.ultimosMovimientos.set(movimientos ?? []),
       error: (err) => console.error("Error al cargar los últimos movimientos:", err)
     });
+  }
+
+  //--- Ventana "Próximos movimientos" ---
+  //Carga y muestra los cobros/ingresos periódicos previstos para los próximos 7 días
+  abrirProximos(): void{
+    const id = this.idActual();
+    if (id === null){
+      return;
+    }
+    this.modalProximos.set(true);
+    this.proximosCargando.set(true);
+    const param = this.paramUsuario(id);
+    const url = param ? `${this.movimientosUrl}/proximos?dias=7&${param}` : `${this.movimientosUrl}/proximos?dias=7`;
+    this.http.get<ProximoMovimiento[]>(url).subscribe({
+      next: (lista) =>{
+        this.proximos.set(lista ?? []);
+        this.proximosCargando.set(false);
+      },
+      error: (err) =>{
+        console.error("Error al cargar los próximos movimientos:", err);
+        this.proximos.set([]);
+        this.proximosCargando.set(false);
+      }
+    });
+  }
+
+  cerrarProximos(): void{
+    this.modalProximos.set(false);
   }
 
   //--- Modal "Añadir ingreso" / "Añadir gasto" ---

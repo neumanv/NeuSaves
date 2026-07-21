@@ -133,72 +133,42 @@
       </div>
       </div>
 
-      <!-- Botones y Metas en la misma fila -->
+      <!-- Dos columnas: izquierda (botones + Estadísticas), derecha (Metas + Bolsa).
+           Ambas columnas se estiran a la misma altura; Estadísticas y Bolsa rellenan
+           con flex-1 el espacio sobrante, de modo que Bolsa sube hasta debajo de Metas -->
       <div class="flex flex-col lg:flex-row gap-6 items-stretch">
-        <div class="w-full lg:w-1/2 flex gap-4">
-          <button type="button" (click)="abrirModalMovimiento('N')"
-            class="boton-tarjeta flex-1 bg-verde text-blanco shadow-sm px-4 py-3 flex items-center justify-center gap-2 font-titulos text-base font-bold transition-colors hover:bg-verde/80 cursor-pointer">
-            <i class="bi bi-plus-circle-fill"></i>
-            Añadir ingreso
-          </button>
-          <button type="button" (click)="abrirModalMovimiento('S')"
-            class="boton-tarjeta flex-1 bg-peligro text-blanco shadow-sm px-4 py-3 flex items-center justify-center gap-2 font-titulos text-base font-bold transition-colors hover:bg-peligro/80 cursor-pointer">
-            <i class="bi bi-dash-circle-fill"></i>
-            Añadir gasto
-          </button>
-        </div>
-        <a [routerLink]="['/metas', token]"
-          class="enlace-limpio w-full lg:w-1/2 bg-blanco border border-borde rounded-2xl shadow-sm px-4 py-3 flex items-center justify-between transition-colors hover:bg-fondo/40 cursor-pointer">
-          <span class="flex items-center gap-2 text-texto">
-            <i class="bi bi-flag-fill"></i>
-            <span class="font-titulos text-base font-bold">Metas</span>
-          </span>
-          <i class="bi bi-chevron-right text-texto"></i>
-        </a>
-      </div>
+        <!-- Columna izquierda -->
+        <div class="w-full lg:w-1/2 flex flex-col gap-6">
+          <div class="flex flex-col gap-4">
+            <div class="flex gap-4">
+              <button type="button" (click)="abrirModalMovimiento('N')"
+                class="boton-tarjeta flex-1 bg-verde text-blanco shadow-sm px-4 py-3 flex items-center justify-center gap-2 font-titulos text-base font-bold transition-colors hover:bg-verde/80 cursor-pointer">
+                <i class="bi bi-plus-circle-fill"></i>
+                Añadir ingreso
+              </button>
+              <button type="button" (click)="abrirModalMovimiento('S')"
+                class="boton-tarjeta flex-1 bg-peligro text-blanco shadow-sm px-4 py-3 flex items-center justify-center gap-2 font-titulos text-base font-bold transition-colors hover:bg-peligro/80 cursor-pointer">
+                <i class="bi bi-dash-circle-fill"></i>
+                Añadir gasto
+              </button>
+            </div>
+            <!-- Mismo alto (px-4 py-3, text-base) que los dos botones de arriba -->
+            <button type="button" (click)="abrirProximos()"
+              class="boton-tarjeta w-full bg-blanco text-texto shadow-sm px-4 py-3 flex items-center justify-center gap-2 font-titulos text-base font-bold transition-colors hover:bg-fondo/40 cursor-pointer">
+              <i class="bi bi-calendar-week"></i>
+              Ver próximos movimientos
+            </button>
+          </div>
 
-      <!-- Bolsa y Estadísticas a ancho completo en la misma fila -->
-      <div class="flex flex-col lg:flex-row gap-6 items-stretch">
-        <!-- Tarjeta "Bolsa" -->
-        <div class="flex-1 bg-blanco border border-borde rounded-2xl shadow-sm overflow-hidden flex flex-col">
-          <div class="flex items-center px-6 py-4 border-b border-borde">
-            <h2 class="font-titulos text-lg font-bold flex items-center gap-2">
-              <i class="bi bi-graph-up-arrow"></i>
-              Bolsa
-            </h2>
-          </div>
-          <div class="px-6 flex flex-col flex-1 justify-around">
-            @if (bolsaCargando()){
-              <p class="py-4 text-sm text-texto/50 text-center">Cargando cotizaciones...</p>
-            }@else{
-              @for (c of bolsa(); track c.simbolo){
-                <div class="flex items-center justify-between py-3 border-b border-borde/50 last:border-0">
-                  <span class="text-sm font-medium">{{ c.nombre }}</span>
-                  <span class="flex items-baseline gap-4">
-                    <span class="text-sm font-semibold whitespace-nowrap">{{ c.precio | number:"1.2-2" }} {{ simboloMoneda(c.moneda) }}</span>
-                    <span class="text-sm font-semibold w-20 text-right whitespace-nowrap"
-                      [class.text-verde]="c.variacion >= 0"
-                      [class.text-peligro]="c.variacion < 0">
-                      {{ c.variacion >= 0 ? "+" : "" }}{{ c.variacion | number:"1.2-2" }} %
-                    </span>
-                  </span>
-                </div>
-              }@empty{
-                <p class="py-4 text-sm text-texto/50 text-center">Cotizaciones no disponibles ahora mismo</p>
-              }
-            }
-          </div>
-        </div>
-
-        <!-- Estadísticas: misma altura que Bolsa -->
-        <a [routerLink]="['/estadisticas', token]"
-          class="enlace-limpio flex-1 bg-blanco border border-borde rounded-2xl shadow-sm overflow-hidden transition-colors hover:bg-fondo/40 cursor-pointer flex flex-col">
-          <div class="px-6 py-4 border-b border-borde flex items-center justify-between">
-            <h2 class="font-titulos text-lg font-bold">Estadísticas</h2>
-            <i class="bi bi-chevron-right text-texto"></i>
-          </div>
-          <div class="px-6 py-4 flex-1 flex items-center">
-            <svg viewBox="0 0 480 220" class="w-full h-auto" role="img" aria-label="Gráfica lineal del balance de los últimos 6 meses">
+          <!-- Estadísticas: rellena el resto de la columna izquierda -->
+          <a [routerLink]="['/estadisticas', token]"
+            class="enlace-limpio flex-1 bg-blanco border border-borde rounded-2xl shadow-sm overflow-hidden transition-colors hover:bg-fondo/40 cursor-pointer flex flex-col">
+            <div class="px-6 py-4 border-b border-borde flex items-center justify-between">
+              <h2 class="font-titulos text-lg font-bold">Estadísticas</h2>
+              <i class="bi bi-chevron-right text-texto"></i>
+            </div>
+            <div class="px-6 py-6 flex-1 flex items-center">
+              <svg viewBox="0 0 480 220" class="w-full h-auto" role="img" aria-label="Gráfica lineal del balance de los últimos 6 meses">
               <g stroke="var(--color-borde)" stroke-width="1">
                 <line x1="40" y1="20"  x2="470" y2="20" />
                 <line x1="40" y1="60"  x2="470" y2="60" />
@@ -234,13 +204,109 @@
                 <text x="355" y="200">Jun</text>
                 <text x="445" y="200">Jul</text>
               </g>
-            </svg>
+              </svg>
+            </div>
+          </a>
+        </div>
+
+        <!-- Columna derecha: Metas arriba y Bolsa rellenando el resto -->
+        <div class="w-full lg:w-1/2 flex flex-col gap-6">
+          <a [routerLink]="['/metas', token]"
+            class="enlace-limpio bg-blanco border border-borde rounded-2xl shadow-sm px-4 py-3 flex items-center justify-between transition-colors hover:bg-fondo/40 cursor-pointer">
+            <span class="flex items-center gap-2 text-texto">
+              <i class="bi bi-flag-fill"></i>
+              <span class="font-titulos text-base font-bold">Metas</span>
+            </span>
+            <i class="bi bi-chevron-right text-texto"></i>
+          </a>
+
+          <!-- Tarjeta "Bolsa": rellena el resto de la columna derecha -->
+          <div class="flex-1 bg-blanco border border-borde rounded-2xl shadow-sm overflow-hidden flex flex-col">
+          <div class="flex items-center px-6 py-4 border-b border-borde">
+            <h2 class="font-titulos text-lg font-bold flex items-center gap-2">
+              <i class="bi bi-graph-up-arrow"></i>
+              Bolsa
+            </h2>
           </div>
-        </a>
+          <div class="px-6 py-1 flex flex-col flex-1 justify-around">
+            @if (bolsaCargando()){
+              <p class="py-4 text-sm text-texto/50 text-center">Cargando cotizaciones...</p>
+            }@else{
+              @for (c of bolsaVisible(); track c.simbolo){
+                <div class="flex items-center justify-between py-1.5 border-b border-borde/50 last:border-0">
+                  <span class="text-sm font-medium">{{ c.nombre }}</span>
+                  <span class="flex items-baseline gap-4">
+                    <span class="text-sm font-semibold whitespace-nowrap">{{ c.precio | number:"1.2-2" }} {{ simboloMoneda(c.moneda) }}</span>
+                    <span class="text-sm font-semibold w-20 text-right whitespace-nowrap"
+                      [class.text-verde]="c.variacion >= 0"
+                      [class.text-peligro]="c.variacion < 0">
+                      {{ c.variacion >= 0 ? "+" : "" }}{{ c.variacion | number:"1.2-2" }} %
+                    </span>
+                  </span>
+                </div>
+              }@empty{
+                <p class="py-4 text-sm text-texto/50 text-center">Cotizaciones no disponibles ahora mismo</p>
+              }
+            }
+          </div>
+        </div>
+      </div>
       </div>
       </div>
     }
   </main>
+
+  <!-- Ventana emergente "Próximos movimientos": cobros/ingresos periódicos previstos en los próximos 7 días -->
+  @if (modalProximos()){
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-texto/30 backdrop-blur-sm" (click)="cerrarProximos()">
+      <div class="relative bg-blanco text-texto font-texto w-full max-w-2xl rounded-2xl shadow-xl flex flex-col max-h-[85vh]"
+        (click)="$event.stopPropagation()">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-borde shrink-0">
+          <h3 class="font-titulos text-lg font-bold flex items-center gap-2">
+            <i class="bi bi-calendar-week"></i>
+            Próximos movimientos (7 días)
+          </h3>
+          <button type="button" (click)="cerrarProximos()"
+            class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-fondo transition-colors cursor-pointer">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <div class="flex-1 min-h-0 overflow-y-auto overflow-x-auto px-6 py-4">
+          @if (proximosCargando()){
+            <p class="text-center text-texto/50 py-8">Cargando...</p>
+          }@else{
+            <div class="min-w-[520px]">
+              <!-- Cabecera de columnas -->
+              <div class="grid grid-cols-[6rem_minmax(0,1fr)_minmax(0,1fr)_8rem] gap-3 text-texto/60 text-sm font-medium border-b border-borde pb-2">
+                <span>Fecha</span>
+                <span>Descripción</span>
+                <span>Tipo</span>
+                <span class="text-right">Cantidad</span>
+              </div>
+              @for (p of proximos(); track $index){
+                <div class="grid grid-cols-[6rem_minmax(0,1fr)_minmax(0,1fr)_8rem] gap-3 items-center text-sm border-b border-borde/50 last:border-0 py-2.5">
+                  <span class="whitespace-nowrap">{{ p.fecha | date:"dd/MM/yyyy" }}</span>
+                  <span class="flex items-center gap-2 min-w-0">
+                    <i class="bi" [ngClass]="iconoTipo(p.tipo)"></i>
+                    <span class="truncate" [title]="p.descripcion">{{ p.descripcion }}</span>
+                  </span>
+                  <span class="truncate" [title]="p.tipo">{{ p.tipo }}</span>
+                  <span class="text-right font-semibold whitespace-nowrap"
+                    [class.text-peligro]="p.gasto === 'S'"
+                    [class.text-verde]="p.gasto === 'N'">
+                    {{ p.gasto === 'S' ? '-' : '+' }}{{ p.cantidad | number:"1.2-2" }} €
+                  </span>
+                </div>
+              }@empty{
+                <p class="text-center text-texto/50 py-8">No tienes movimientos periódicos previstos en los próximos 7 días.</p>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
 
   <!-- Modal "Añadir ingreso" / "Añadir gasto": verde para ingresos, rojo para gastos -->
   @if (modalMovimiento()){

@@ -15,4 +15,6 @@ public interface MovimientoPeriodico{
     Integer getDiaCobro();
     Integer getMesCobro();
     LocalDate getFechaFinMovimiento();
+    LocalDate getUltimoCobro();
+    LocalDate getFechaMovimiento();
 }

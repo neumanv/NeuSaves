@@ -4,6 +4,7 @@ import com.gastos.backend.config.AuthUtils;
 import com.gastos.backend.dto.EstadisticasResponse;
 import com.gastos.backend.dto.MovimientoPeriodico;
 import com.gastos.backend.dto.PaginaResponse;
+import com.gastos.backend.dto.ProximoMovimiento;
 import com.gastos.backend.dto.ResumenMesResponse;
 import com.gastos.backend.dto.UltimoMovimiento;
 import com.gastos.backend.model.MovimientoUsuario;
@@ -138,6 +139,14 @@ public class MovimientoUsuarioController {
     public List<MovimientoPeriodico> periodicos(@RequestParam(required = false) Long usuario) {
         Long id = resolverUsuario(usuario);
         return movimientoUsuarioRepository.movimientosPeriodicos(id);
+    }
+
+    //Cobros/ingresos periódicos previstos entre hoy y dentro de "dias" días (por defecto 7)
+    @GetMapping("/proximos")
+    public List<ProximoMovimiento> proximos(@RequestParam(required = false) Long usuario,
+                                            @RequestParam(defaultValue = "7") int dias) {
+        Long id = resolverUsuario(usuario);
+        return movimientoPeriodicoService.proximosMovimientos(id, dias);
     }
 
     @PutMapping("/periodicos/{id}")
