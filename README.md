@@ -290,8 +290,3 @@ Por diseño, todos los correos (registro, recuperación de contraseña) se enví
 - El email debe verificarse en el registro para activar la cuenta.
 - Recuperación de contraseña mediante email (enlace temporal).
 
----
-
-## Licencia
-
-Este proyecto está disponible bajo la licencia MIT. Siéntete libre de usarlo, modificarlo y distribuirlo.

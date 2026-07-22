@@ -267,8 +267,8 @@ export class UsuarioDetalle implements OnInit{
       error: (err) => console.error("Error al cargar el resumen del mes:", err)
     });
 
-    //Últimos 5 movimientos
-    const paramUltimos = param ? `limite=5&${param}` : "limite=5";
+    //Últimos 4 movimientos
+    const paramUltimos = param ? `limite=4&${param}` : "limite=4";
     this.http.get<UltimoMovimiento[]>(`${this.movimientosUrl}/ultimos?${paramUltimos}`).subscribe({
       next: (movimientos) => this.ultimosMovimientos.set(movimientos ?? []),
       error: (err) => console.error("Error al cargar los últimos movimientos:", err)

@@ -39,10 +39,7 @@
           sm:col-span-2 sm:w-[calc(50%-0.5rem)] sm:mx-auto
           xl:col-span-1 xl:w-auto xl:mx-0">
           <p class="text-sm font-medium">Ahorrado este mes:</p>
-          <p class="font-titulos font-bold mt-2 whitespace-nowrap" [ngClass]="tamanoCantidad()"
-            [class.text-peligro]="ahorradoNivel() === 'bajo'"
-            [class.text-aviso]="ahorradoNivel() === 'medio'"
-            [class.text-verde]="ahorradoNivel() === 'alto'">
+          <p class="font-titulos font-bold mt-2 whitespace-nowrap text-texto" [ngClass]="tamanoCantidad()">
             {{ ahorradoTexto() }} €
           </p>
         </div>
@@ -70,10 +67,10 @@
           <span class="text-right">Fecha</span>
           <span class="text-right">Cantidad</span>
         </div>
-        <!-- Filas de movimientos: flex-1 + justify-between para repartir el espacio verticalmente -->
-        <div class="flex-1 flex flex-col justify-between px-6 py-2">
+        <!-- Filas de movimientos: los 5 se reparten para llenar el alto, sin scroll -->
+        <div class="flex-1 min-h-0 flex flex-col justify-between px-6 py-2">
           @for (m of ultimosMovimientos(); track $index){
-            <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_6rem_8rem] gap-3 items-center text-sm border-b border-borde/50 last:border-0 py-2">
+            <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_6rem_8rem] gap-3 items-center text-sm border-b border-borde/50 last:border-0 py-4">
               <span class="block w-full overflow-hidden whitespace-nowrap
                 [mask-image:linear-gradient(to_right,#000_80%,transparent_100%)]
                 [-webkit-mask-image:linear-gradient(to_right,#000_80%,transparent_100%)]"
